@@ -8,6 +8,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Modo demo desativado — Supabase configurado
 
+
 // ============================================================
 // SUPABASE CLIENT (sem SDK externo)
 // ============================================================
@@ -333,37 +334,16 @@ function ModuleHub({ user, onSelectModule }) {
 // ============================================================
 function MoldAwayModule({ user }) {
   return (
-    <div style={{ padding: 32, maxWidth: 560, margin: "0 auto" }}>
-      <div style={{
-        background: T.card, borderRadius: T.radius,
-        padding: "28px 24px", boxShadow: T.shadow, textAlign: "center",
-      }}>
-        <div style={{ fontSize: 36, marginBottom: 10 }}>🏖️</div>
-        <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
-          MoldAway — Gestão de Descansos
-        </h3>
-        <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.6, marginBottom: 20 }}>
-          O MoldAway está pronto. Para ativá-lo aqui, faça upload do
-          arquivo <strong>moldaway_1.html</strong> como asset estático
-          e configure a URL abaixo.
-        </p>
-        <div style={{
-          background: T.bg, borderRadius: 8, padding: "12px 14px",
-          fontSize: 12, fontFamily: "monospace", textAlign: "left", color: T.primary,
-        }}>
-          {`// Em src/App.jsx, substitua esta função por:`}<br />
-          {`// <iframe src="URL_DO_MOLDAWAY" />`}
-        </div>
-        <div style={{
-          marginTop: 16, padding: "10px 14px", background: "#E3FCEF",
-          borderRadius: 8, fontSize: 12.5, color: "#006644", textAlign: "left",
-        }}>
-          <strong>Próximo passo (Onda 1 — Passo 1.4):</strong><br />
-          Faça o upload do moldaway_1.html no Supabase Storage ou Vercel
-          e substitua a URL aqui.
-        </div>
-      </div>
-    </div>
+    <iframe
+      src="/moldaway.html"
+      style={{
+        width: "100%",
+        height: "100%",
+        border: "none",
+        display: "block",
+      }}
+      title="MoldAway"
+    />
   );
 }
 
@@ -532,7 +512,7 @@ function PlatformShell({ user, onLogout }) {
         </div>
 
         {/* Conteúdo */}
-        <div style={{ flex: 1, overflowY: "auto" }}>{renderContent()}</div>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>{renderContent()}</div>
       </div>
     </div>
   );
