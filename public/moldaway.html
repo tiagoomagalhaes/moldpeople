@@ -1925,6 +1925,30 @@ psm.value = ps.value;
 rebuildNav();
 navigateTo('dashboard');
 console.log('MoldAway v2 ok — collabs:', getCollabs().length, 'periodos:', getPeriodos().length, 'sols:', getSols().length);
+// ============================================================
+// MOLDPEOPLE SHELL — Recebe perfil via postMessage
+// ============================================================
+window.addEventListener('message', function(event) {
+  if (!event.data || event.data.type !== 'MP_SET_PROFILE') return;
+  const profile = event.data.profile;
+  if (!profile) return;
+
+  // Atualiza o select de perfil
+  const ps = document.getElementById('profile-select');
+  if (ps) {
+    ps.value = profile;
+    // Se o valor exato não existir, tenta encontrar pela role
+    if (!ps.value) {
+      const [role] = profile.split(':');
+      const opts = Array.from(ps.options);
+      const match = opts.find(o => o.value.startsWith(role + ':'));
+      if (match) ps.value = match.value;
+    }
+  }
+  changeProfile();
+});
+
+
 </script>
 </body>
 </html>
