@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // ============================================================
 // CONFIG — Credenciais do Supabase (projeto moldpeople-dev)
@@ -333,9 +333,41 @@ function ModuleHub({ user, onSelectModule }) {
 // MOLDAWAY (módulo ativo — placeholder até hospedar o HTML)
 // ============================================================
 function MoldAwayModule({ user }) {
+  const iframeRef = useRef(null);
+
+  // Mapeamento email → ID interno do MoldAway (localStorage)
+  const getProfileValue = () => {
+    const emailMap = {
+      "tiago@moldpeople.com":  "gestor:g1",
+      "cinara@moldpeople.com": "gestor:g2",
+      "rh@moldpeople.com":     "rh:rh1",
+      "ana@moldpeople.com":    "user:u1",
+      "bruno@moldpeople.com":  "user:u2",
+    };
+    return emailMap[user.email] || (user.role === "rh" ? "rh:rh1" : user.role === "gestor" ? "gestor:g1" : "user:u1");
+  };
+
+  const handleLoad = () => {
+    if (!iframeRef.current) return;
+    iframeRef.current.contentWindow.postMessage(
+      { type: "MP_SET_PROFILE", profile: getProfileValue() },
+      "*"
+    );
+    try {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        const style = doc.createElement("style");
+        style.textContent = "#sidebar { display: none !important; } #main { margin-left: 0 !important; }";
+        doc.head.appendChild(style);
+      }
+    } catch (_) {}
+  };
+
   return (
     <iframe
+      ref={iframeRef}
       src="/moldaway.html"
+      onLoad={handleLoad}
       style={{
         width: "100%",
         height: "100%",
