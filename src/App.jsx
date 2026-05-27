@@ -98,7 +98,7 @@ const MODULES = [
     subtitle: "Reuniões 1:1",
     icon: "🤝",
     color: "#0052CC",
-    status: "coming",
+    status: "active",
     description: "Gestão de reuniões 1:1, clima, compromissos e desenvolvimento",
   },
   {
@@ -379,6 +379,50 @@ function MoldAwayModule({ user }) {
   );
 }
 
+
+// ============================================================
+// MOLD1A1 (módulo ativo)
+// ============================================================
+function Mold1a1Module({ user }) {
+  const iframeRef = useRef(null);
+
+  const getRole = () => {
+    if (user.role === "gestor" || user.role === "rh") return "gestor";
+    return "colaborador";
+  };
+
+  const handleLoad = () => {
+    if (!iframeRef.current) return;
+    iframeRef.current.contentWindow.postMessage(
+      { type: "MP_SET_PROFILE_1A1", role: getRole() },
+      "*"
+    );
+    try {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        const style = doc.createElement("style");
+        style.textContent = "#sidebar { display: none !important; } #main { margin-left: 0 !important; }";
+        doc.head.appendChild(style);
+      }
+    } catch (_) {}
+  };
+
+  return (
+    <iframe
+      ref={iframeRef}
+      src="/mold1a1.html"
+      onLoad={handleLoad}
+      style={{
+        width: "100%",
+        height: "100%",
+        border: "none",
+        display: "block",
+      }}
+      title="Mold1a1"
+    />
+  );
+}
+
 // ============================================================
 // SHELL — Contêiner principal da plataforma
 // ============================================================
@@ -390,6 +434,7 @@ function PlatformShell({ user, onLogout }) {
   const renderContent = () => {
     if (!activeModule) return <ModuleHub user={user} onSelectModule={setActiveModule} />;
     if (activeModule === "moldaway") return <MoldAwayModule user={user} />;
+    if (activeModule === "mold1a1") return <Mold1a1Module user={user} />;
     return (
       <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
