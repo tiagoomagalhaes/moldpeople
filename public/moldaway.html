@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MoldAway — Gestão de Descansos e Períodos Aquisitivos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --primary:#0052CC; --primary-dark:#172B4D; --accent:#F25400;
+  --bg:#F0F2F5; --card:#FFFFFF; --border:#DFE1E6; --text:#172B4D; --muted:#6B778C; --body:#334E6E;
+  --green:#36B37E; --green-bg:#E3FCEF; --yellow:#FFAB00; --yellow-bg:#FFFAE6;
+  --red:#FF5630; --red-bg:#FFEBE6; --orange:#FF8B00; --orange-bg:#FFF3E0;
+  --purple:#6B4C93; --purple-bg:#EAE0F5; --teal:#0E7C7B; --teal-bg:#DCF5F4;
+  --sidebar-w:240px; --header-h:64px; --radius:10px;
+  --shadow:0 1px 4px rgba(23,43,77,.10), 0 0 1px rgba(23,43,77,.08);
+  --shadow-lg:0 8px 32px rgba(23,43,77,.13), 0 1px 4px rgba(23,43,77,.08);
+  --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+#app { display: flex; height: 100dvh; overflow: hidden; }
+#sidebar { width: var(--sidebar-w); background: var(--primary-dark); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; z-index: 20; }
+#sidebar-logo { padding: 0 20px; height: var(--header-h); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.08); flex-shrink: 0; }
+.logo-mark { width: 34px; height: 34px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; }
+.logo-text { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
+.logo-text span { color: #FFB380; }
+#profile-selector { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); flex-shrink: 0; }
+#profile-selector label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.5); margin-bottom: 6px; display: block; }
+#profile-select { width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.08); color: #fff; font-family: inherit; font-size: 13px; cursor: pointer; outline: none; }
+#profile-select option { background: var(--primary-dark); color: #fff; }
+#sidebar-nav { padding: 12px 12px; flex: 1; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; cursor: pointer; color: rgba(255,255,255,.65); font-size: 13.5px; font-weight: 500; transition: all .15s; user-select: none; position: relative; }
+.nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.nav-item.active { background: rgba(76,154,255,.18); color: #4C9AFF; }
+.nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-item .nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+#sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: 11px; color: rgba(255,255,255,.3); padding-bottom: calc(14px + var(--safe-bottom)); }
+#sidebar-footer .ecosystem { color: rgba(255,255,255,.5); font-weight: 600; margin-bottom: 2px; }
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+#topbar { height: var(--header-h); background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; gap: 12px; }
+#topbar-title { font-size: 17px; font-weight: 700; white-space: nowrap; }
+#topbar-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+#content { flex: 1; overflow-y: auto; padding: 24px; -webkit-overflow-scrolling: touch; }
+.index-banner { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+.index-card { background: var(--card); border-radius: var(--radius); padding: 14px 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; }
+.ic-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.ic-val { font-size: 26px; font-weight: 700; line-height: 1; font-family: 'DM Mono', monospace; color: var(--primary); }
+.ic-sub { font-size: 11px; color: var(--muted); }
+.ic-green .ic-val { color: var(--green); }
+.ic-yellow .ic-val { color: var(--yellow); }
+.ic-red .ic-val { color: var(--red); }
+.ic-orange .ic-val { color: var(--orange); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; font-family: inherit; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #003E99; }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #E4E6EA; }
+.btn-success { background: var(--green); color: #fff; }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-warning { background: var(--accent); color: #fff; }
+.btn-sm { padding: 5px 10px; font-size: 11.5px; }
+.btn-ghost { background: transparent; color: var(--primary); padding: 6px 10px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
+.section-title { font-size: 16px; font-weight: 700; }
+.section-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.card-section { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.card-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+.saldo-card { background: linear-gradient(135deg, #0052CC 0%, #1976D2 100%); color: #fff; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-lg); margin-bottom: 20px; position: relative; overflow: hidden; }
+.saldo-card::after { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.08); }
+.saldo-label { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+.saldo-val { font-size: 48px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; margin: 6px 0; }
+.saldo-unit { font-size: 14px; opacity: .85; font-weight: 500; }
+.saldo-foot { font-size: 12px; opacity: .85; margin-top: 12px; }
+.periodo-list { display: flex; flex-direction: column; gap: 10px; }
+.periodo-card { background: var(--card); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); border-left: 4px solid var(--green); }
+.periodo-card.alert-amarelo { border-left-color: var(--yellow); background: #FFFDF5; }
+.periodo-card.alert-laranja { border-left-color: var(--orange); background: #FFF9F2; }
+.periodo-card.alert-vermelho { border-left-color: var(--red); background: #FFF8F7; }
+.periodo-card.formando { border-left-color: var(--muted); opacity: .85; }
+.periodo-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.periodo-titulo { font-weight: 700; font-size: 13px; }
+.periodo-meta { font-size: 11.5px; color: var(--muted); }
+.periodo-bar-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.periodo-bar { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.periodo-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width .6s ease; }
+.periodo-bar-pending { height: 100%; background: repeating-linear-gradient(45deg, var(--yellow), var(--yellow) 4px, #FFF8E0 4px, #FFF8E0 8px); border-radius: 4px; transition: width .6s ease; }
+.periodo-numbers { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.periodo-alert { font-size: 11.5px; margin-top: 8px; padding: 7px 10px; border-radius: 6px; font-weight: 600; }
+.periodo-alert.amarelo { background: var(--yellow-bg); color: #946200; }
+.periodo-alert.laranja { background: var(--orange-bg); color: #7A4100; }
+.periodo-alert.vermelho { background: var(--red-bg); color: #BF2600; }
+.ird-card { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.ird-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.ird-title { font-size: 13px; font-weight: 700; }
+.ird-explain { font-size: 11px; color: var(--muted); }
+.ird-score { font-size: 38px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; }
+.ird-score.green { color: var(--green); }
+.ird-score.yellow { color: var(--yellow); }
+.ird-score.orange { color: var(--orange); }
+.ird-score.red { color: var(--red); }
+.ird-label { font-size: 12px; font-weight: 600; margin-top: 4px; }
+.ird-label.green { color: #1D7A52; }
+.ird-label.yellow { color: #946200; }
+.ird-label.orange { color: #7A4100; }
+.ird-label.red { color: #BF2600; }
+.ird-bar { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; margin: 12px 0 10px; position: relative; }
+.ird-bar-fill { height: 100%; border-radius: 5px; transition: width .6s ease; }
+.ird-breakdown { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--body); }
+.ird-breakdown-row { display: flex; justify-content: space-between; }
+.ird-breakdown-row .v { font-weight: 600; font-family: 'DM Mono', monospace; }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { text-align: left; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); padding: 10px 13px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+.tbl td { padding: 11px 13px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+.tbl tr:hover td { background: #FAFBFC; }
+.tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.chip { display: inline-flex; align-items: center; gap: 3px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.chip-green { background: var(--green-bg); color: #1D7A52; }
+.chip-yellow { background: var(--yellow-bg); color: #946200; }
+.chip-red { background: var(--red-bg); color: #BF2600; }
+.chip-orange { background: var(--orange-bg); color: #7A4100; }
+.chip-blue { background: #E8F0FE; color: var(--primary); }
+.chip-gray { background: #F4F5F7; color: var(--muted); }
+.chip-purple { background: var(--purple-bg); color: var(--purple); }
+.chip-teal { background: var(--teal-bg); color: var(--teal); }
+.chip-descanso { background: var(--green-bg); color: #1D7A52; }
+.chip-aniversario { background: var(--purple-bg); color: var(--purple); }
+.chip-premio { background: var(--yellow-bg); color: #946200; }
+.chip-atestado { background: var(--red-bg); color: #BF2600; }
+.chip-outros { background: var(--teal-bg); color: var(--teal); }
+.chip-luto { background: #ECEFF4; color: #2E3A50; }
+.chip-licenca { background: #E0EAF7; color: #1F3A6B; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; color: #fff; vertical-align: middle; }
+.collab-cell { display: flex; align-items: center; gap: 9px; }
+.collab-cell .nm { font-weight: 600; font-size: 13px; }
+.collab-cell .cg { font-size: 11px; color: var(--muted); }
+.sla-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.sla-dot.green { background: var(--green); }
+.sla-dot.yellow { background: var(--yellow); }
+.sla-dot.orange { background: var(--orange); }
+.sla-dot.red { background: var(--red); }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(23,43,77,.55); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--card); border-radius: 14px; width: 100%; max-width: 560px; max-height: 90dvh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); animation: modal-in .18s ease; }
+@keyframes modal-in { from{transform:translateY(14px) scale(.98);opacity:0} to{transform:none;opacity:1} }
+.modal-header { padding: 16px 22px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.modal-title { font-size: 15px; font-weight: 700; }
+.modal-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.modal-close { width: 30px; height: 30px; border-radius: 7px; border: none; background: var(--bg); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+.modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch; }
+.modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.form-input, .form-select, .form-textarea { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13.5px; font-family: inherit; color: var(--text); background: #fff; transition: border-color .15s; outline: none; width: 100%; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); }
+.form-textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-hint { font-size: 11px; color: var(--muted); }
+.form-hint.warn { color: var(--red); font-weight: 600; }
+.form-hint.info { color: var(--primary); font-weight: 600; }
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+.cal-month { font-size: 16px; font-weight: 700; text-transform: capitalize; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: var(--border); border-radius: 8px; padding: 4px; overflow: hidden; }
+.cal-dayname { background: var(--card); padding: 8px 4px; text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: .3px; }
+.cal-day { background: var(--card); min-height: 80px; padding: 6px; position: relative; font-size: 11px; transition: background .15s; display: flex; flex-direction: column; gap: 3px; }
+.cal-day.other-month { background: #F8F9FA; opacity: .55; }
+.cal-day.today { background: #EBF2FF; }
+.cal-day.today .cal-daynum { color: var(--primary); font-weight: 800; }
+.cal-day.weekend { background: #FAFBFC; }
+.cal-daynum { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.cal-event { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+.cal-event.descanso { background: var(--green-bg); color: #1D7A52; }
+.cal-event.aniversario { background: var(--purple-bg); color: var(--purple); }
+.cal-event.premio { background: var(--yellow-bg); color: #946200; }
+.cal-event.atestado { background: var(--red-bg); color: #BF2600; }
+.cal-event.outros { background: var(--teal-bg); color: var(--teal); }
+.cal-event.luto { background: #ECEFF4; color: #2E3A50; }
+.cal-event.licenca { background: #E0EAF7; color: #1F3A6B; }
+.status-pendente { background: var(--yellow-bg); color: #946200; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+.status-aprovada { background: var(--green-bg); color: #1D7A52; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+.status-reprovada { background: var(--red-bg); color: #BF2600; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+.status-cancelada { background: #F4F5F7; color: var(--muted); padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+.req-list { display: flex; flex-direction: column; gap: 10px; }
+.req-card { background: var(--card); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); border-left: 4px solid var(--yellow); display: flex; align-items: center; gap: 14px; }
+.req-info { flex: 1; min-width: 0; }
+.req-name { font-weight: 700; font-size: 14px; }
+.req-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.req-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.req-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.team-card { background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); border-left: 4px solid var(--green); cursor: pointer; transition: box-shadow .15s; }
+.team-card:hover { box-shadow: var(--shadow-lg); }
+.team-card.ird-yellow { border-left-color: var(--yellow); }
+.team-card.ird-orange { border-left-color: var(--orange); }
+.team-card.ird-red { border-left-color: var(--red); }
+.team-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.team-card-name { font-weight: 700; font-size: 13.5px; }
+.team-card-cargo { font-size: 11px; color: var(--muted); }
+.team-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.tcg-label { font-size: 9.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; margin-bottom: 3px; }
+.tcg-val { font-size: 16px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--primary); }
+.tcg-val.ird { font-size: 18px; }
+.tcg-val.ird.green { color: var(--green); }
+.tcg-val.ird.yellow { color: var(--yellow); }
+.tcg-val.ird.orange { color: var(--orange); }
+.tcg-val.ird.red { color: var(--red); }
+.team-card-status { font-size: 11px; font-weight: 600; margin-top: 8px; }
+.team-card-status.green { color: #1D7A52; }
+.team-card-status.yellow { color: #946200; }
+.team-card-status.orange { color: #7A4100; }
+.team-card-status.red { color: #BF2600; }
+.empty-state { text-align: center; padding: 44px 20px; color: var(--muted); }
+.empty-state .es-icon { font-size: 38px; margin-bottom: 10px; }
+.empty-state .es-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+.empty-state .es-sub { font-size: 12.5px; }
+.type-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.type-leg-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.log-item { padding: 10px 12px; border-left: 3px solid var(--border); background: var(--bg); border-radius: 0 6px 6px 0; margin-bottom: 6px; }
+.log-item.criar { border-left-color: var(--green); }
+.log-item.ajuste { border-left-color: var(--orange); }
+.log-item.aprovar { border-left-color: var(--primary); }
+.log-item.reprovar { border-left-color: var(--red); }
+.log-item.encerrar { border-left-color: var(--purple); }
+.log-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.log-title { font-size: 12px; font-weight: 700; }
+.log-time { font-size: 10.5px; color: var(--muted); font-family: 'DM Mono', monospace; white-space: nowrap; }
+.log-body { font-size: 11.5px; color: var(--body); }
+.log-body .vw { font-family: 'DM Mono', monospace; padding: 1px 5px; border-radius: 4px; background: var(--bg); }
+.log-body .old { background: var(--red-bg); color: #BF2600; text-decoration: line-through; }
+.log-body .new { background: var(--green-bg); color: #1D7A52; }
+.log-motivo { font-size: 11.5px; font-style: italic; color: var(--body); margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border); }
+.log-actor { font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+.alert-banner { padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; }
+.alert-banner.amarelo { background: var(--yellow-bg); border-left: 4px solid var(--yellow); color: #946200; }
+.alert-banner.laranja { background: var(--orange-bg); border-left: 4px solid var(--orange); color: #7A4100; }
+.alert-banner.vermelho { background: var(--red-bg); border-left: 4px solid var(--red); color: #BF2600; }
+.alert-banner-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+.alert-banner-text { flex: 1; }
+.alert-banner-title { font-weight: 700; margin-bottom: 2px; }
+#toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 11px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); z-index: 300; opacity: 0; transform: translateY(8px); transition: all .22s; pointer-events: none; }
+#toast.show { opacity: 1; transform: none; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+#mobile-profile { display: none; }
+@media (max-width: 768px) {
+  :root { --sidebar-w: 0px; --header-h: 54px; }
+  #app { flex-direction: column; height: 100dvh; overflow: hidden; }
+  #sidebar { width: 100%; height: auto; order: 2; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; padding-bottom: var(--safe-bottom); flex-direction: column; }
+  #sidebar-logo, #sidebar-footer, #profile-selector { display: none; }
+  #sidebar-nav { flex-direction: row; padding: 5px 4px; border-top: 1px solid rgba(255,255,255,.1); gap: 0; overflow: visible; }
+  .nav-item { flex: 1; flex-direction: column; gap: 2px; padding: 5px 2px; font-size: 9.5px; text-align: center; border-radius: 6px; justify-content: center; }
+  .nav-item .nav-icon { font-size: 19px; width: auto; }
+  .nav-item .nav-badge { position: absolute; top: 3px; right: 14px; }
+  .nav-item span:not(.nav-icon):not(.nav-badge) { display: block; }
+  #main { flex: 1; overflow: hidden; order: 1; }
+  #topbar { padding: 0 14px; }
+  #topbar-title { font-size: 15px; }
+  #content { padding: 12px 12px 80px; overflow-y: auto; height: 100%; }
+  #mobile-profile { display: flex !important; align-items: center; gap: 8px; }
+  #mobile-profile select { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11.5px; font-family: inherit; background: #fff; color: var(--text); font-weight: 600; }
+  .index-banner { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .ic-val { font-size: 22px; }
+  .section-header { flex-direction: column; align-items: stretch; }
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal { max-width: 100%; border-radius: 18px 18px 0 0; max-height: 92dvh; }
+  .modal-footer { flex-direction: column-reverse; padding: 10px 16px calc(10px + var(--safe-bottom)); }
+  .modal-footer .btn { width: 100%; justify-content: center; min-height: 46px; }
+  .form-row { grid-template-columns: 1fr; gap: 10px; }
+  .cal-day { min-height: 60px; padding: 4px; }
+  .cal-daynum { font-size: 10px; }
+  .cal-event { font-size: 8.5px; padding: 1px 4px; }
+  .req-card { flex-wrap: wrap; }
+  .req-actions { flex: 1 1 100%; justify-content: stretch; }
+  .req-actions .btn { flex: 1; justify-content: center; }
+  #toast { left: 14px; right: 14px; bottom: calc(68px + var(--safe-bottom)); text-align: center; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+<nav id="sidebar">
+  <div id="sidebar-logo"><div class="logo-mark">M</div><div class="logo-text">Mold<span>Away</span></div></div>
+  <div id="profile-selector">
+    <label>Perfil de acesso</label>
+    <select id="profile-select" onchange="changeProfile()">
+      <optgroup label="Colaborador">
+        <option value="user:u1">Ana Paula Rodrigues</option>
+        <option value="user:u2">Bruno Martins</option>
+        <option value="user:u3">Camila Torres</option>
+        <option value="user:u4">Diego Fonseca</option>
+        <option value="user:u5">Elisa Carvalho</option>
+        <option value="user:u6">Fernando Azevedo</option>
+      </optgroup>
+      <optgroup label="Gestor">
+        <option value="gestor:g1">Tiago Martins (Inovação)</option>
+        <option value="gestor:g2">Cinara Vieira (G&G)</option>
+      </optgroup>
+      <optgroup label="G&G / Liderança">
+        <option value="rh:rh1">G&amp;G — Visão Global</option>
+        <option value="rh:ceo">CEO — Visão Global</option>
+        <option value="rh:cfo">CFO — Visão Global</option>
+      </optgroup>
+    </select>
+  </div>
+  <div id="sidebar-nav"></div>
+  <div id="sidebar-footer"><div class="ecosystem">MoldPeople</div>Mold1a1 · MoldAway · EAI</div>
+</nav>
+<div id="main">
+  <div id="topbar">
+    <div id="topbar-title">Dashboard</div>
+    <div id="topbar-actions">
+      <div id="mobile-profile"><select id="profile-select-mobile" onchange="changeProfileMobile()"></select></div>
+      <button class="btn btn-secondary btn-sm" id="btn-export" onclick="exportData()" style="display:none">📥 Exportar</button>
+      <button class="btn btn-primary btn-sm" id="btn-nova-solicitacao" onclick="openSolicitacaoModal()" style="display:none">+ Solicitar</button>
+    </div>
+  </div>
+  <div id="content"></div>
+</div>
+</div>
+
+<div class="modal-overlay" id="modal-solicitacao">
+  <div class="modal">
+    <div class="modal-header"><div><div class="modal-title">Nova Solicitação</div><div class="modal-subtitle" id="solicitacao-sub"></div></div><button class="modal-close" onclick="closeModal('modal-solicitacao')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="sol-tipo" onchange="onTipoChange()"><option value="">Selecione...</option></select><span class="form-hint" id="sol-tipo-hint"></span></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Data Inicial</label><input class="form-input" type="date" id="sol-inicio" onchange="updateSaldoPreview()"></div><div class="form-group"><label class="form-label">Data Final</label><input class="form-input" type="date" id="sol-fim" onchange="updateSaldoPreview()"></div></div>
+      <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="sol-obs" placeholder="Ex: viagem em família..."></textarea></div>
+      <div id="sol-preview" style="display:none; padding:12px 14px; background:var(--bg); border-radius:8px;"><div style="font-size:11.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px">Resumo</div><div style="font-size:13px" id="sol-preview-text"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-solicitacao')">Cancelar</button><button class="btn btn-primary" onclick="saveSolicitacao()">Enviar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-tipos">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><div><div class="modal-title">Tipos de Ausência</div></div><button class="modal-close" onclick="closeModal('modal-tipos')">✕</button></div>
+    <div class="modal-body">
+      <div id="tipos-list"></div>
+      <div style="border-top:1px solid var(--border); padding-top:14px;">
+        <div class="form-group"><label class="form-label">Novo tipo</label><input class="form-input" id="novo-tipo-nome" placeholder="Ex: Licença estudo"></div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px"><input type="checkbox" id="novo-tipo-consome" style="accent-color: var(--primary); width:16px; height:16px"><label for="novo-tipo-consome" style="font-size:13px">Consome saldo</label></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="addTipo()">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-tipos')">Fechar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-ajuste">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header"><div><div class="modal-title">Ajuste Manual</div><div class="modal-subtitle" id="ajuste-sub"></div></div><button class="modal-close" onclick="closeModal('modal-ajuste')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Tipo de ação</label><select class="form-select" id="ajuste-tipo" onchange="onAjusteTipoChange()"><option value="ajuste-saldo">Ajustar saldo do período</option><option value="conceder-antecipado">Conceder usufruto antecipado (novo período)</option><option value="encerrar-periodo">Encerrar período manualmente</option></select></div>
+      <div class="form-group" id="ajuste-valor-group"><label class="form-label" id="ajuste-valor-label">Novo saldo (dias)</label><input class="form-input" type="number" id="ajuste-valor" min="0" max="60"><span class="form-hint" id="ajuste-valor-hint"></span></div>
+      <div class="form-group"><label class="form-label">Motivo (obrigatório)</label><textarea class="form-textarea" id="ajuste-motivo" placeholder="Descreva o motivo. Será registrado no log auditável."></textarea></div>
+      <div class="alert-banner amarelo" style="margin:0"><div class="alert-banner-icon">⚠️</div><div class="alert-banner-text"><div class="alert-banner-title">Alteração registrada</div>Quem fez, quando, valor anterior, novo valor e motivo. Imutável.</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-ajuste')">Cancelar</button><button class="btn btn-warning" onclick="saveAjuste()">Aplicar e registrar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-detalhe">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header"><div><div class="modal-title" id="det-title">Detalhes</div><div class="modal-subtitle" id="det-sub"></div></div><button class="modal-close" onclick="closeModal('modal-detalhe')">✕</button></div>
+    <div class="modal-body" id="det-body"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-detalhe')">Fechar</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// DATA LAYER
+// ============================================================
+const KEY_C='maway_collabs_v2', KEY_S='maway_solicitacoes_v2', KEY_T='maway_tipos_v2', KEY_P='maway_periodos_v2', KEY_L='maway_log_v2';
+const _get = (k, dflt=[]) => JSON.parse(localStorage.getItem(k) || JSON.stringify(dflt));
+const _set = (k, d) => localStorage.setItem(k, JSON.stringify(d));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+const getCollabs = () => _get(KEY_C);
+const getSols    = () => _get(KEY_S);
+const getTipos   = () => _get(KEY_T);
+const getPeriodos= () => _get(KEY_P);
+const getLog     = () => _get(KEY_L);
+
+// ============================================================
+// HELPERS
+// ============================================================
+function diasEntre(d1, d2) {
+  if (!d1 || !d2) return 0;
+  return Math.round((new Date(d2) - new Date(d1)) / 86400000) + 1;
+}
+function fmtDate(d) { if (!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+function initials(n) { return n.split(' ').slice(0,2).map(x=>x[0]).join('').toUpperCase(); }
+function avatarColor(name) {
+  const cols = ['#0052CC','#2E4057','#6B4C93','#0E7C7B','#C84B31','#1B4332','#7C3E66','#1976D2'];
+  let h = 0; for (let i=0;i<name.length;i++) h = name.charCodeAt(i)+((h<<5)-h);
+  return cols[Math.abs(h) % cols.length];
+}
+function showToast(msg, ms=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
+
+// ============================================================
+// SEED
+// ============================================================
+function seed() {
+  // Versão do seed: incrementar quando a lógica do seed muda para forçar re-geração
+  const SEED_VERSION = 3;
+  const currentVersion = JSON.parse(localStorage.getItem('maway_seed_version') || '0');
+  if (currentVersion >= SEED_VERSION && getCollabs().length > 0) return;
+
+  // Limpar dados antigos para re-gerar com FIFO correto
+  localStorage.removeItem(KEY_C);
+  localStorage.removeItem(KEY_S);
+  localStorage.removeItem(KEY_T);
+  localStorage.removeItem(KEY_P);
+  localStorage.removeItem(KEY_L);
+  localStorage.setItem('maway_seed_version', JSON.stringify(SEED_VERSION));
+  const today = new Date();
+  const ymd = d => d.toISOString().slice(0,10);
+  const date = (y,m,d) => ymd(new Date(y, m-1, d));
+
+  _set(KEY_C, [
+    { id:'u1', nome:'Ana Paula Rodrigues',  cargo:'Analista de RH',           gestorId:'g2', email:'ana.rodrigues@moldsoft.com.br', inicioContrato: date(2022,3,15) },
+    { id:'u2', nome:'Bruno Martins',        cargo:'Desenvolvedor Sênior',     gestorId:'g1', email:'bruno.martins@moldsoft.com.br', inicioContrato: date(2021,8,1) },
+    { id:'u3', nome:'Camila Torres',        cargo:'Designer UX',              gestorId:'g1', email:'camila.torres@moldsoft.com.br', inicioContrato: date(2024,2,10) },
+    { id:'u4', nome:'Diego Fonseca',        cargo:'Gerente de Projetos',      gestorId:'g1', email:'diego.fonseca@moldsoft.com.br', inicioContrato: date(2020,11,5) },
+    { id:'u5', nome:'Elisa Carvalho',       cargo:'Consultora de Negócios',   gestorId:'g2', email:'elisa.carvalho@moldsoft.com.br', inicioContrato: date(2023,5,20) },
+    { id:'u6', nome:'Fernando Azevedo',     cargo:'Analista de Dados',        gestorId:'g1', email:'fernando.azevedo@moldsoft.com.br', inicioContrato: date(2024,9,1) },
+    { id:'g1', nome:'Tiago Martins',        cargo:'Coordenador de Inovação',  gestorId:'rh1', email:'tiago.martins@moldsoft.com.br', inicioContrato: date(2019,4,8), isGestor:true },
+    { id:'g2', nome:'Cinara Vieira',        cargo:'Líder de Gente & Gestão',  gestorId:'rh1', email:'cinara.vieira@moldsoft.com.br', inicioContrato: date(2020,6,15), isGestor:true },
+  ]);
+
+  _set(KEY_T, [
+    { id:'descanso',    nome:'Descanso Remunerado',     consomeSaldo:true,  cor:'descanso',    fixo:true },
+    { id:'aniversario', nome:'Day Off de Aniversário',  consomeSaldo:false, cor:'aniversario', fixo:true },
+    { id:'premio',      nome:'Day Off Prêmio',          consomeSaldo:false, cor:'premio',      fixo:true },
+    { id:'atestado',    nome:'Atestado Médico',         consomeSaldo:false, cor:'atestado',    fixo:false },
+    { id:'luto',        nome:'Licença por Luto',        consomeSaldo:false, cor:'luto',        fixo:false },
+    { id:'licenca',     nome:'Licença Paternidade/Maternidade', consomeSaldo:false, cor:'licenca', fixo:false },
+  ]);
+
+  // Gerar períodos aquisitivos com base no início do contrato
+  const collabs = getCollabs();
+  const periodos = [];
+  collabs.forEach(c => {
+    const start = new Date(c.inicioContrato);
+    const now = new Date();
+    let year = 0;
+    let saldoAnteriorEsgotado = true; // FIFO: só consome período seguinte após o anterior estar zerado
+    while (true) {
+      const periodStart = new Date(start);
+      periodStart.setFullYear(periodStart.getFullYear() + year);
+      const periodEnd = new Date(start);
+      periodEnd.setFullYear(periodEnd.getFullYear() + year + 1);
+      if (periodStart > now) break;
+      const emFormacao = periodEnd > now;
+      let diasUsados = 0;
+      if (!emFormacao) {
+        if (saldoAnteriorEsgotado) {
+          // Período anterior estava zerado, este pode ter sido parcialmente ou totalmente usado
+          const s = (c.id.charCodeAt(c.id.length-1) + year) % 10;
+          if (s < 4) { diasUsados = 30; saldoAnteriorEsgotado = true; }
+          else if (s < 7) { diasUsados = 15; saldoAnteriorEsgotado = false; }
+          else { diasUsados = 0; saldoAnteriorEsgotado = false; }
+        } else {
+          // Período anterior ainda tinha saldo — este não pode ter sido tocado (FIFO)
+          diasUsados = 0;
+          saldoAnteriorEsgotado = false;
+        }
+      }
+      periodos.push({
+        id: `p_${c.id}_${year}`,
+        userId: c.id,
+        ano: year + 1,
+        inicio: ymd(periodStart),
+        fim: ymd(periodEnd),
+        diasConcedidos: 30,
+        diasUsados,
+        emFormacao,
+        encerrado: false,
+        criadoEm: Date.now()
+      });
+      year++;
+      if (year > 10) break;
+    }
+  });
+  _set(KEY_P, periodos);
+
+  // Solicitações
+  const ago = d => { const dt = new Date(today); dt.setDate(dt.getDate()-d); return ymd(dt); };
+  const add = d => { const dt = new Date(today); dt.setDate(dt.getDate()+d); return ymd(dt); };
+  _set(KEY_S, [
+    { id:uid(), userId:'u2', tipo:'descanso',    inicio:add(8),  fim:add(14), dias:7,  obs:'Viagem em família',          status:'pendente', criadoEm:Date.now()-86400000 },
+    { id:uid(), userId:'u3', tipo:'aniversario', inicio:add(20), fim:add(20), dias:1,  obs:'',                            status:'pendente', criadoEm:Date.now()-3600000 },
+    { id:uid(), userId:'u4', tipo:'descanso',    inicio:add(30), fim:add(44), dias:15, obs:'Férias planejadas',          status:'pendente', criadoEm:Date.now()-1800000 },
+    { id:uid(), userId:'u1', tipo:'descanso',    inicio:add(5),  fim:add(11), dias:7,  obs:'',  status:'aprovada', aprovadoEm:Date.now()-86400000*3, criadoEm:Date.now()-86400000*5 },
+    { id:uid(), userId:'u5', tipo:'premio',      inicio:add(3),  fim:add(3),  dias:1,  obs:'Reconhecimento Q1', status:'aprovada', aprovadoEm:Date.now()-86400000*7, criadoEm:Date.now()-86400000*10 },
+    { id:uid(), userId:'u6', tipo:'atestado',    inicio:add(-2), fim:add(0),  dias:3,  obs:'',  status:'aprovada', aprovadoEm:Date.now()-86400000*4, criadoEm:Date.now()-86400000*5 },
+    { id:uid(), userId:'u2', tipo:'descanso',    inicio:add(-10),fim:add(-3), dias:8,  obs:'',  status:'reprovada', motivoReprov:'Conflito com entrega do sprint', criadoEm:Date.now()-86400000*15 },
+  ]);
+
+  _set(KEY_L, [{
+    id: uid(), acao: 'criar', target: 'sistema', targetLabel: 'Inicialização do sistema',
+    valorAnterior: null, valorNovo: 'Períodos aquisitivos gerados automaticamente',
+    motivo: 'Carga inicial baseada em datas de início de contrato',
+    actorId: 'sys', actorNome: 'Sistema', actorRole: 'sys', timestamp: Date.now()
+  }]);
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let _profile = { role: 'user', id: 'u1' };
+let _calMonth = new Date().getMonth();
+let _calYear  = new Date().getFullYear();
+let _currentPage = 'dashboard';
+
+function changeProfile() {
+  const v = document.getElementById('profile-select').value;
+  const [role, id] = v.split(':');
+  _profile = { role, id };
+  document.getElementById('profile-select-mobile').value = v;
+  rebuildNav();
+  navigateTo('dashboard');
+}
+function changeProfileMobile() {
+  document.getElementById('profile-select').value = document.getElementById('profile-select-mobile').value;
+  changeProfile();
+}
+
+// ============================================================
+// PERÍODO AQUISITIVO LOGIC
+// ============================================================
+function getPeriodosColab(userId) {
+  return getPeriodos().filter(p => p.userId === userId && !p.encerrado)
+    .sort((a,b) => a.inicio.localeCompare(b.inicio));
+}
+function getSaldoRemanescente(p) {
+  return p.diasConcedidos - p.diasUsados;
+}
+function getSaldoTotal(userId) {
+  // FIFO: só pode usufruir do período mais antigo que ainda tem saldo.
+  // Retorna o saldo total disponível (acumulado dos períodos anteriores esgotados + o atual ativo).
+  // Na prática, períodos posteriores só liberam quando os anteriores estiverem zerados.
+  const abertos = getPeriodosColab(userId).filter(p => !p.emFormacao);
+  let total = 0;
+  for (const p of abertos) {
+    total += getSaldoRemanescente(p);
+  }
+  return total;
+}
+// Retorna apenas o saldo usufruível agora (do período mais antigo com saldo)
+function getSaldoUsufruivel(userId) {
+  const abertos = getPeriodosColab(userId).filter(p => !p.emFormacao);
+  for (const p of abertos) {
+    const rem = getSaldoRemanescente(p);
+    if (rem > 0) return rem;
+  }
+  return 0;
+}
+// Retorna o período ativo (mais antigo com saldo remanescente)
+function getPeriodoAtivo(userId) {
+  const abertos = getPeriodosColab(userId).filter(p => !p.emFormacao);
+  for (const p of abertos) {
+    if (getSaldoRemanescente(p) > 0) return p;
+  }
+  return null;
+}
+function getMesesDesdeDisponivel(p) {
+  if (p.emFormacao) return 0;
+  const fim = new Date(p.fim);
+  return Math.max(0, Math.floor((new Date() - fim) / (1000 * 60 * 60 * 24 * 30.44)));
+}
+function getDiasParaCompletar(p) {
+  if (!p.emFormacao) return 0;
+  const fim = new Date(p.fim);
+  return Math.max(0, Math.ceil((fim - new Date()) / 86400000));
+}
+
+// Régua de alertas progressivos: 60d antes / disponível / 6m / 9m / 12m+
+function getAlertaPeriodo(p) {
+  const saldo = getSaldoRemanescente(p);
+  if (p.emFormacao) {
+    const dias = getDiasParaCompletar(p);
+    if (dias <= 60) return { nivel:'amarelo', label:'Planejar próximas férias', desc:`Período se completa em ${dias} dias. Comece a planejar.` };
+    return { nivel:'neutro', label:'Em formação', desc:`${dias} dias até liberação do saldo.` };
+  }
+  if (saldo === 0) return { nivel:'neutro', label:'Período usufruído', desc:'Todos os dias foram utilizados.' };
+  const meses = getMesesDesdeDisponivel(p);
+  if (meses < 6)  return { nivel:'verde',    label:'Disponível',                       desc:`${saldo} dia(s) liberado(s) para programar.` };
+  if (meses < 9)  return { nivel:'amarelo',  label:'Programe seu descanso',            desc:`${meses} meses sem usufruto. Atenção.` };
+  if (meses < 12) return { nivel:'laranja',  label:'Acúmulo elevado',                  desc:`${meses} meses sem usufruto. Ação necessária.` };
+  return                { nivel:'vermelho', label:'Risco de desgaste — urgente',      desc:`${meses} meses sem usufruto desse período.` };
+}
+
+// ============================================================
+// ÍNDICE DE RISCO DE DESCANSO (IRD)
+// Composição: 40% tempo sem usufruto + 35% acúmulo + 25% adiamentos
+// ============================================================
+function calcIRD(userId) {
+  const periodos = getPeriodosColab(userId).filter(p => !p.emFormacao);
+  const sols = getSols().filter(s => s.userId === userId);
+
+  // C1: meses sem usufruto (40%)
+  const ultimoDescanso = sols
+    .filter(s => s.status === 'aprovada' && getTipos().find(t => t.id === s.tipo)?.consomeSaldo)
+    .sort((a,b) => b.fim.localeCompare(a.fim))[0];
+  let mesesSemUsufruto = 24;
+  if (ultimoDescanso) {
+    const last = new Date(ultimoDescanso.fim);
+    mesesSemUsufruto = Math.max(0, (new Date() - last) / (1000 * 60 * 60 * 24 * 30.44));
+  }
+  const c1 = Math.min(100, (mesesSemUsufruto / 18) * 100);
+
+  // C2: dias acumulados (35%)
+  const totalAcumulado = periodos.reduce((acc, p) => acc + getSaldoRemanescente(p), 0);
+  const c2 = Math.min(100, (totalAcumulado / 60) * 100);
+
+  // C3: adiamentos nos últimos 24 meses (25%)
+  const limit = Date.now() - (24 * 30 * 86400000);
+  const adiamentos = sols.filter(s =>
+    s.criadoEm > limit && (s.status === 'reprovada' || s.status === 'cancelada')
+  ).length;
+  const c3 = Math.min(100, (adiamentos / 4) * 100);
+
+  const score = Math.round(0.40 * c1 + 0.35 * c2 + 0.25 * c3);
+  return {
+    score,
+    c1: Math.round(c1), c2: Math.round(c2), c3: Math.round(c3),
+    mesesSemUsufruto: Math.round(mesesSemUsufruto),
+    totalAcumulado, adiamentos,
+    nivel: score <= 30 ? 'green' : score <= 60 ? 'yellow' : score <= 80 ? 'orange' : 'red',
+    label: score <= 30 ? 'Saudável' : score <= 60 ? 'Atenção' : score <= 80 ? 'Risco de desgaste' : 'Crítico — intervenção G&G',
+  };
+}
+
+// ============================================================
+// LOG AUDITÁVEL
+// ============================================================
+function currentActor() {
+  if (_profile.role === 'rh') {
+    const map = { rh1: 'G&G — Gente & Gestão', ceo: 'CEO', cfo: 'CFO' };
+    return { id: _profile.id, nome: map[_profile.id] || 'G&G' };
+  }
+  const c = getCollabs().find(x => x.id === _profile.id);
+  return { id: _profile.id, nome: c?.nome || '—' };
+}
+function logAction({ acao, target, targetLabel, valorAnterior, valorNovo, motivo }) {
+  const log = getLog();
+  const actor = currentActor();
+  log.push({
+    id: uid(), acao, target, targetLabel,
+    valorAnterior, valorNovo, motivo: motivo || '',
+    actorId: actor.id, actorNome: actor.nome, actorRole: _profile.role,
+    timestamp: Date.now()
+  });
+  _set(KEY_L, log);
+}
+function canViewLog(userId) {
+  if (_profile.role === 'rh') return true;
+  if (_profile.role === 'gestor') {
+    const c = getCollabs().find(x => x.id === userId);
+    return c?.gestorId === _profile.id || userId === _profile.id;
+  }
+  return userId === _profile.id;
+}
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+const NAV = {
+  user: [
+    { id:'dashboard',     icon:'🏠', label:'Início' },
+    { id:'meus-periodos', icon:'📆', label:'Períodos' },
+    { id:'minhas-sols',   icon:'📋', label:'Solicitações' },
+    { id:'cal-empresa',   icon:'📅', label:'Calendário' },
+    { id:'meu-log',       icon:'🔍', label:'Histórico' },
+  ],
+  gestor: [
+    { id:'dashboard',     icon:'🏠', label:'Painel' },
+    { id:'pendentes',     icon:'⏳', label:'Pendentes', badge:true },
+    { id:'minha-equipe',  icon:'👥', label:'Equipe' },
+    { id:'cal-equipe',    icon:'📅', label:'Calendário' },
+    { id:'minhas-sols',   icon:'📋', label:'Minhas Sols' },
+  ],
+  rh: [
+    { id:'dashboard',   icon:'🏠', label:'Visão Geral' },
+    { id:'todas-sols',  icon:'📋', label:'Solicitações', badge:true },
+    { id:'todos-saldos',icon:'💰', label:'Saldos' },
+    { id:'riscos',      icon:'🚨', label:'IRD' },
+    { id:'cal-empresa', icon:'📅', label:'Calendário' },
+    { id:'colabs-rh',   icon:'👥', label:'Pessoas' },
+    { id:'log',         icon:'🔍', label:'Auditoria' },
+    { id:'config',      icon:'⚙️', label:'Config' },
+  ],
+};
+function rebuildNav() {
+  const nav = document.getElementById('sidebar-nav');
+  const items = NAV[_profile.role];
+  nav.innerHTML = items.map(it => {
+    const badge = it.badge ? `<span class="nav-badge" id="badge-${it.id}" style="display:none">0</span>` : '';
+    return `<div class="nav-item" data-page="${it.id}" onclick="navigateTo('${it.id}')">
+      <span class="nav-icon">${it.icon}</span><span>${it.label}</span>${badge}</div>`;
+  }).join('');
+}
+function navigateTo(page) {
+  _currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  const titles = {
+    dashboard: _profile.role === 'user' ? 'Início' : _profile.role === 'gestor' ? 'Painel do Gestor' : 'Visão Geral',
+    'meus-periodos':'Meus Períodos Aquisitivos', 'minhas-sols':'Minhas Solicitações',
+    'cal-empresa':'Calendário', 'meu-log':'Meu Histórico',
+    pendentes:'Pendentes', 'minha-equipe':'Minha Equipe', 'cal-equipe':'Calendário da Equipe',
+    'todas-sols':'Todas as Solicitações', 'todos-saldos':'Saldos & Períodos',
+    riscos:'Índice de Risco & Alertas', 'colabs-rh':'Colaboradores',
+    log:'Log de Auditoria', config:'Configurações',
+  };
+  document.getElementById('topbar-title').textContent = titles[page] || page;
+  document.getElementById('btn-nova-solicitacao').style.display = _profile.role === 'user' ? 'inline-flex' : 'none';
+  document.getElementById('btn-export').style.display = _profile.role === 'rh' ? 'inline-flex' : 'none';
+  render();
+  updateBadges();
+}
+function updateBadges() {
+  const sols = getSols().filter(s => s.status === 'pendente');
+  if (_profile.role === 'gestor') {
+    const ids = getCollabs().filter(c => c.gestorId === _profile.id).map(c => c.id);
+    const cnt = sols.filter(s => ids.includes(s.userId)).length;
+    const b = document.getElementById('badge-pendentes');
+    if (b) { b.textContent = cnt; b.style.display = cnt > 0 ? 'inline-block' : 'none'; }
+  }
+  if (_profile.role === 'rh') {
+    const b = document.getElementById('badge-todas-sols');
+    if (b) { b.textContent = sols.length; b.style.display = sols.length > 0 ? 'inline-block' : 'none'; }
+  }
+}
+
+// ============================================================
+// CALENDÁRIO (comum a todos os perfis)
+// ============================================================
+function calendarioEmpresa(content) {
+  const collabs = getCollabs();
+  const sols = getSols().filter(s => s.status === 'aprovada');
+  renderCalendario(content, sols, collabs, 'Empresa');
+}
+function calendarioEquipe(content) {
+  const team = getCollabs().filter(c => c.gestorId === _profile.id);
+  const ids = team.map(t => t.id);
+  const sols = getSols().filter(s => s.status === 'aprovada' && ids.includes(s.userId));
+  renderCalendario(content, sols, team, 'Equipe');
+}
+function renderCalendario(content, sols, collabs, label) {
+  const tipos = getTipos();
+  const first = new Date(_calYear, _calMonth, 1);
+  const last = new Date(_calYear, _calMonth + 1, 0);
+  const startDow = first.getDay();
+  const days = [];
+  for (let i = startDow - 1; i >= 0; i--) {
+    days.push({ date: new Date(_calYear, _calMonth, -i), other: true });
+  }
+  for (let d = 1; d <= last.getDate(); d++) {
+    days.push({ date: new Date(_calYear, _calMonth, d), other: false });
+  }
+  while (days.length % 7 !== 0) {
+    const lst = days[days.length - 1].date;
+    const next = new Date(lst); next.setDate(next.getDate() + 1);
+    days.push({ date: next, other: true });
+  }
+  const monthName = first.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+  const today = new Date(); today.setHours(0,0,0,0);
+  const events = [];
+  sols.forEach(s => {
+    const c = collabs.find(x => x.id === s.userId);
+    if (!c) return;
+    const t = tipos.find(x => x.id === s.tipo);
+    let cur = new Date(s.inicio);
+    const end = new Date(s.fim);
+    while (cur <= end) {
+      events.push({ date: cur.toISOString().slice(0,10), nome: c.nome.split(' ')[0], cor: t?.cor || 'outros', tipo: t?.nome });
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
+  content.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">Calendário · ${label}</div>
+        <div class="section-sub">${sols.length} ausência(s) aprovada(s)</div>
+      </div>
+    </div>
+    <div class="card-section">
+      <div class="cal-header">
+        <button class="btn btn-secondary btn-sm" onclick="prevMonth()">← Anterior</button>
+        <div class="cal-month">${monthName}</div>
+        <button class="btn btn-secondary btn-sm" onclick="nextMonth()">Próximo →</button>
+      </div>
+      <div class="type-legend">
+        ${tipos.map(t => `<span class="type-leg-item cal-event ${t.cor}">${t.nome}</span>`).join('')}
+      </div>
+      <div class="cal-grid">
+        ${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d => `<div class="cal-dayname">${d}</div>`).join('')}
+        ${days.map(d => {
+          const ymd = d.date.toISOString().slice(0,10);
+          const isToday = d.date.getTime() === today.getTime();
+          const dow = d.date.getDay();
+          const isWeekend = dow === 0 || dow === 6;
+          const dayEvents = events.filter(e => e.date === ymd);
+          return `<div class="cal-day ${d.other ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isWeekend && !d.other ? 'weekend' : ''}">
+            <div class="cal-daynum">${d.date.getDate()}</div>
+            ${dayEvents.slice(0,3).map(e => `<div class="cal-event ${e.cor}" title="${e.nome} · ${e.tipo}">${e.nome}</div>`).join('')}
+            ${dayEvents.length > 3 ? `<div class="cal-event chip-gray" style="text-align:center">+${dayEvents.length - 3}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+function prevMonth() { _calMonth--; if (_calMonth < 0) { _calMonth = 11; _calYear--; } render(); }
+function nextMonth() { _calMonth++; if (_calMonth > 11) { _calMonth = 0; _calYear++; } render(); }
+
+// ============================================================
+// RENDER ROUTER
+// ============================================================
+function render() {
+  const content = document.getElementById('content');
+  if (_profile.role === 'user')   return renderUser(content);
+  if (_profile.role === 'gestor') return renderGestor(content);
+  if (_profile.role === 'rh')     return renderRH(content);
+}
+
+// ============================================================
+// HELPERS DE RENDER (compartilhados)
+// ============================================================
+function renderPeriodoCard(p) {
+  const a = getAlertaPeriodo(p);
+  const saldo = getSaldoRemanescente(p);
+
+  // FIFO: só o período mais antigo com saldo é realmente "ativo/disponível"
+  const periodoAtivo = getPeriodoAtivo(p.userId);
+  const esteEhOAtivo = periodoAtivo && periodoAtivo.id === p.id;
+
+  // Chip de status
+  let chipCls, chipLabel;
+  if (p.emFormacao) {
+    chipCls = 'chip-gray'; chipLabel = 'Em formação';
+  } else if (saldo === 0) {
+    chipCls = 'chip-blue'; chipLabel = 'Concluído';
+  } else if (esteEhOAtivo) {
+    chipCls = 'chip-green'; chipLabel = 'Ativo';
+  } else {
+    chipCls = 'chip-gray'; chipLabel = 'Bloqueado';
+  }
+
+  // Dias pendentes de aprovação ligados a este período
+  // (solicitações que consomem saldo, status pendente, do mesmo colaborador)
+  const solsPendentes = getSols().filter(s =>
+    s.userId === p.userId &&
+    s.status === 'pendente' &&
+    getTipos().find(t => t.id === s.tipo)?.consomeSaldo
+  );
+  // Calcula quantos dias pendentes seriam debitados deste período (FIFO)
+  let diasPendentesNestePeriodo = 0;
+  if (!p.emFormacao && saldo > 0) {
+    // Simula débito FIFO dos pedidos pendentes até chegar neste período
+    const abertos = getPeriodosColab(p.userId).filter(x => !x.emFormacao);
+    let saldoSimulado = {}; abertos.forEach(x => saldoSimulado[x.id] = getSaldoRemanescente(x));
+    for (const s of solsPendentes) {
+      let restante = s.dias;
+      for (const x of abertos) {
+        if (restante <= 0) break;
+        const disp = saldoSimulado[x.id];
+        const deb = Math.min(disp, restante);
+        saldoSimulado[x.id] -= deb;
+        if (x.id === p.id) diasPendentesNestePeriodo += deb;
+        restante -= deb;
+      }
+    }
+  }
+
+  // Barras
+  const total = p.diasConcedidos;
+  const pctUsado    = total > 0 ? Math.min(100, (p.diasUsados / total) * 100) : 0;
+  const pctPendente = total > 0 ? Math.min(100 - pctUsado, (diasPendentesNestePeriodo / total) * 100) : 0;
+
+  // Números: "10 usados + 7 pendentes / 30 · 13d livres"
+  const livresReais = saldo - diasPendentesNestePeriodo;
+  let numerosHtml = `${p.diasUsados}/${total}`;
+  if (diasPendentesNestePeriodo > 0) {
+    numerosHtml = `${p.diasUsados} usados<span style="color:var(--yellow);font-weight:700"> + ${diasPendentesNestePeriodo} pendente(s)</span> / ${total}`;
+  }
+  const livresLabel = livresReais > 0 ? `${livresReais}d livres` : saldo > 0 ? `${saldo}d (todos em aprovação)` : '0d livres';
+
+  // Cor da borda do card
+  let cls = '';
+  if (p.emFormacao && a.nivel !== 'amarelo') cls = 'formando';
+  else if (a.nivel === 'amarelo')  cls = 'alert-amarelo';
+  else if (a.nivel === 'laranja'  && _profile.role !== 'user') cls = 'alert-laranja';
+  else if (a.nivel === 'vermelho' && _profile.role !== 'user') cls = 'alert-vermelho';
+
+  return `<div class="periodo-card ${cls}">
+    <div class="periodo-head">
+      <div>
+        <div class="periodo-titulo">Período ${p.ano}º — ${fmtDate(p.inicio)} a ${fmtDate(p.fim)}${p.antecipado ? ' (antecipado)' : ''}</div>
+        <div class="periodo-meta">${p.emFormacao ? `Em formação · libera em ${getDiasParaCompletar(p)} dias` : `Disponível há ${getMesesDesdeDisponivel(p)} mês(es)`}</div>
+      </div>
+      <span class="chip ${chipCls}">${chipLabel}</span>
+    </div>
+    <div class="periodo-bar-row">
+      <div class="periodo-bar" style="position:relative; overflow:hidden; display:flex; flex-direction:row;">
+        <div class="periodo-bar-fill" style="width:${pctUsado}%; flex-shrink:0"></div>
+        ${diasPendentesNestePeriodo > 0
+          ? `<div class="periodo-bar-pending" style="width:${pctPendente}%; flex-shrink:0" title="${diasPendentesNestePeriodo} dia(s) aguardando aprovação"></div>`
+          : ''}
+      </div>
+      <div class="periodo-numbers" style="font-size:11px">${numerosHtml} · ${livresLabel}</div>
+    </div>
+    ${diasPendentesNestePeriodo > 0
+      ? `<div style="font-size:11px; color:#946200; background:var(--yellow-bg); border-radius:5px; padding:5px 9px; margin-top:6px; font-weight:600">⏳ ${diasPendentesNestePeriodo} dia(s) em solicitação aguardando aprovação do gestor</div>`
+      : ''}
+    ${(() => {
+      const showAlert = ['amarelo','laranja','vermelho'].includes(a.nivel);
+      if (!showAlert) return '';
+      if (_profile.role === 'user' && ['laranja','vermelho'].includes(a.nivel)) return '';
+      return `<div class="periodo-alert ${a.nivel}">${a.nivel === 'vermelho' ? '🚨' : a.nivel === 'laranja' ? '⚠️' : '💡'} ${a.label} — ${a.desc}</div>`;
+    })()}
+  </div>`;
+}
+
+function renderSolsList(sols, includeCollab) {
+  if (!sols.length) return `<div class="empty-state"><div class="es-icon">📭</div><div class="es-title">Nenhuma solicitação</div></div>`;
+  const tipos = getTipos();
+  return `<div class="tbl-wrap"><table class="tbl">
+    <thead><tr>${includeCollab ? '<th>Colaborador</th>' : ''}<th>Tipo</th><th>Período</th><th>Dias</th><th>Status</th><th></th></tr></thead>
+    <tbody>${sols.map(s => {
+      const t = tipos.find(x => x.id === s.tipo);
+      const c = includeCollab ? getCollabs().find(x => x.id === s.userId) : null;
+      const canCancel = s.userId === _profile.id && s.status === 'pendente';
+      return `<tr>
+        ${includeCollab ? `<td><div class="collab-cell">
+          <div class="avatar" style="background:${avatarColor(c.nome)}">${initials(c.nome)}</div>
+          <div><div class="nm">${c.nome}</div><div class="cg">${c.cargo}</div></div></div></td>` : ''}
+        <td><span class="chip chip-${t?.cor || 'gray'}">${t?.nome || s.tipo}</span></td>
+        <td>${fmtDate(s.inicio)}${s.inicio !== s.fim ? ` → ${fmtDate(s.fim)}` : ''}</td>
+        <td><strong>${s.dias}</strong></td>
+        <td><span class="status-${s.status}">${s.status[0].toUpperCase() + s.status.slice(1)}</span>
+          ${s.status === 'reprovada' && s.motivoReprov ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${s.motivoReprov}</div>` : ''}</td>
+        <td>${canCancel ? `<button class="btn btn-ghost btn-sm" onclick="cancelarSolicitacao('${s.id}')" style="color:var(--red)">Cancelar</button>` : ''}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+function renderReqCard(s) {
+  const c = getCollabs().find(x => x.id === s.userId);
+  const t = getTipos().find(x => x.id === s.tipo);
+  return `<div class="req-card">
+    <div class="avatar" style="background:${avatarColor(c.nome)}; width:40px; height:40px; font-size:13px">${initials(c.nome)}</div>
+    <div class="req-info">
+      <div class="req-name">${c.nome}</div>
+      <div class="req-meta">${fmtDate(s.inicio)}${s.inicio !== s.fim ? ` → ${fmtDate(s.fim)}` : ''} · <strong>${s.dias} dia(s)</strong></div>
+      <div class="req-chips">
+        <span class="chip chip-${t?.cor || 'gray'}">${t?.nome}</span>
+        ${t?.consomeSaldo ? '<span class="chip chip-blue">Consome saldo</span>' : '<span class="chip chip-gray">Não consome</span>'}
+      </div>
+      ${s.obs ? `<div style="font-size:11.5px; color:var(--muted); margin-top:5px; font-style:italic">"${s.obs}"</div>` : ''}
+    </div>
+    <div class="req-actions">
+      <button class="btn btn-success btn-sm" onclick="aprovarSol('${s.id}')">✓ Aprovar</button>
+      <button class="btn btn-danger btn-sm" onclick="reprovarSol('${s.id}')">✕ Reprovar</button>
+    </div>
+  </div>`;
+}
+
+function renderTeamCard(c) {
+  const ird = calcIRD(c.id);
+  const saldoTotal = getSaldoTotal(c.id);
+  return `<div class="team-card ird-${ird.nivel}" onclick="openDetalheColab('${c.id}')">
+    <div class="team-card-head">
+      <div class="avatar" style="background:${avatarColor(c.nome)}; width:38px; height:38px; font-size:13px">${initials(c.nome)}</div>
+      <div style="flex:1; min-width:0">
+        <div class="team-card-name">${c.nome}</div>
+        <div class="team-card-cargo">${c.cargo}</div>
+      </div>
+    </div>
+    <div class="team-card-grid">
+      <div>
+        <div class="tcg-label">Saldo total</div>
+        <div class="tcg-val">${saldoTotal}<span style="font-size:11px; font-weight:500; color:var(--muted); margin-left:3px">d</span></div>
+      </div>
+      <div>
+        <div class="tcg-label">IRD</div>
+        <div class="tcg-val ird ${ird.nivel}">${ird.score}</div>
+      </div>
+    </div>
+    <div class="team-card-status ${ird.nivel}">${ird.label}</div>
+  </div>`;
+}
+
+function renderLogItem(l) {
+  const acaoLabel = { criar:'Criação', ajuste:'Ajuste manual', aprovar:'Aprovação', reprovar:'Reprovação', encerrar:'Encerramento', cancelar:'Cancelamento', 'conceder-antecipado':'Concessão antecipada' };
+  return `<div class="log-item ${l.acao}">
+    <div class="log-head">
+      <div class="log-title">${acaoLabel[l.acao] || l.acao} · ${l.targetLabel}</div>
+      <div class="log-time">${fmtDateTime(l.timestamp)}</div>
+    </div>
+    <div class="log-body">
+      ${l.valorAnterior !== null && l.valorAnterior !== undefined ? `<span class="vw old">${l.valorAnterior}</span> → ` : ''}
+      ${l.valorNovo !== null && l.valorNovo !== undefined ? `<span class="vw new">${l.valorNovo}</span>` : ''}
+    </div>
+    ${l.motivo ? `<div class="log-motivo">"${l.motivo}"</div>` : ''}
+    <div class="log-actor">Por <strong>${l.actorNome}</strong>${l.actorRole && l.actorRole !== 'sys' ? ` (${l.actorRole === 'rh' ? 'G&G/Liderança' : l.actorRole})` : ''}</div>
+  </div>`;
+}
+
+function detectarConflitos(sols) {
+  const out = [];
+  for (let i = 0; i < sols.length; i++) {
+    for (let j = i+1; j < sols.length; j++) {
+      const a = sols[i], b = sols[j];
+      if (a.userId === b.userId) continue;
+      const aI = new Date(a.inicio), aF = new Date(a.fim);
+      const bI = new Date(b.inicio), bF = new Date(b.fim);
+      if (aI <= bF && bI <= aF) {
+        const cA = getCollabs().find(c => c.id === a.userId);
+        const cB = getCollabs().find(c => c.id === b.userId);
+        out.push({ a: cA, b: cB, overlap: { inicio: a.inicio > b.inicio ? a.inicio : b.inicio, fim: a.fim < b.fim ? a.fim : b.fim } });
+      }
+    }
+  }
+  return out;
+}
+
+// ============================================================
+// COLABORADOR
+// ============================================================
+function renderUser(content) {
+  if (_currentPage === 'dashboard')     return userDashboard(content);
+  if (_currentPage === 'meus-periodos') return userPeriodos(content);
+  if (_currentPage === 'minhas-sols')   return userMinhasSols(content);
+  if (_currentPage === 'cal-empresa')   return calendarioEmpresa(content);
+  if (_currentPage === 'meu-log')       return userLog(content);
+}
+
+function userDashboard(content) {
+  const me = getCollabs().find(c => c.id === _profile.id);
+  const saldoTotal = getSaldoTotal(me.id);
+  const periodos = getPeriodosColab(me.id);
+  const periodosAtivos = periodos.filter(p => !p.emFormacao);
+  const periodoFormando = periodos.find(p => p.emFormacao);
+  const mySols = getSols().filter(s => s.userId === me.id);
+  const aprovadas = mySols.filter(s => s.status === 'aprovada');
+  const pendentes = mySols.filter(s => s.status === 'pendente');
+  const today = new Date().toISOString().slice(0,10);
+  const proxima = aprovadas.filter(s => s.fim >= today).sort((a,b) => a.inicio.localeCompare(b.inicio))[0];
+  const ird = calcIRD(me.id);
+
+  // Banner do alerta mais grave
+  let bannerHtml = '';
+  const alertasFiltro = _profile.role === 'user' ? ['amarelo'] : ['vermelho','laranja','amarelo'];
+  const fortes = periodosAtivos.map(p => ({ p, a: getAlertaPeriodo(p) }))
+    .filter(x => alertasFiltro.includes(x.a.nivel))
+    .sort((a,b) => alertasFiltro.indexOf(a.a.nivel) - alertasFiltro.indexOf(b.a.nivel));
+  if (fortes.length) {
+    const { p, a } = fortes[0];
+    bannerHtml = `<div class="alert-banner ${a.nivel}">
+      <div class="alert-banner-icon">${a.nivel === 'vermelho' ? '🚨' : a.nivel === 'laranja' ? '⚠️' : '💡'}</div>
+      <div class="alert-banner-text">
+        <div class="alert-banner-title">${a.label}</div>
+        Período ${p.ano}º (${fmtDate(p.inicio)} a ${fmtDate(p.fim)}) — ${a.desc}
+      </div>
+    </div>`;
+  }
+
+  content.innerHTML = `
+    ${bannerHtml}
+    <div class="saldo-card">
+      <div class="saldo-label">Saldo total disponível</div>
+      <div class="saldo-val">${saldoTotal} <span class="saldo-unit">dias</span></div>
+      <div class="saldo-foot">${periodosAtivos.length} período(s) com saldo · ${pendentes.length} solicitação(ões) pendente(s)${periodoFormando ? ` · próximo em ${getDiasParaCompletar(periodoFormando)}d` : ''}</div>
+    </div>
+    <div class="index-banner">
+      <div class="index-card ic-${ird.nivel === 'green' ? 'green' : ird.nivel === 'red' ? 'red' : ird.nivel === 'orange' ? 'orange' : 'yellow'}">
+        <div class="ic-label">IRD</div><div class="ic-val">${ird.score}</div><div class="ic-sub">${ird.label}</div>
+      </div>
+      <div class="index-card ic-green">
+        <div class="ic-label">Aprovadas</div><div class="ic-val">${aprovadas.length}</div><div class="ic-sub">Total no histórico</div>
+      </div>
+      <div class="index-card ic-yellow">
+        <div class="ic-label">Pendentes</div><div class="ic-val">${pendentes.length}</div><div class="ic-sub">Aguardando</div>
+      </div>
+      <div class="index-card">
+        <div class="ic-label">Próxima</div>
+        <div class="ic-val" style="font-size:16px; font-family:'DM Sans'">${proxima ? fmtDate(proxima.inicio) : '—'}</div>
+        <div class="ic-sub">${proxima ? `${proxima.dias} dia(s)` : 'Nenhuma'}</div>
+      </div>
+    </div>
+    <div class="card-section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Meus períodos aquisitivos</div>
+          <div class="section-sub">Cada período = 30 dias · Início do contrato: ${fmtDate(me.inicioContrato)}</div>
+        </div>
+      </div>
+      <div class="periodo-list">${periodos.slice().reverse().slice(0,5).map(p => renderPeriodoCard(p)).join('')}</div>
+    </div>`;
+}
+
+function userPeriodos(content) {
+  const me = getCollabs().find(c => c.id === _profile.id);
+  const periodos = getPeriodosColab(me.id).slice().reverse();
+  content.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">Meus períodos aquisitivos</div>
+        <div class="section-sub">Início do contrato: ${fmtDate(me.inicioContrato)} · ${periodos.length} período(s)</div>
+      </div>
+    </div>
+    <div class="periodo-list">${periodos.map(p => renderPeriodoCard(p)).join('')}</div>`;
+}
+
+function userMinhasSols(content) {
+  const mySols = getSols().filter(s => s.userId === _profile.id).sort((a,b) => b.criadoEm - a.criadoEm);
+  content.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">Histórico de Solicitações</div>
+        <div class="section-sub">${mySols.length} solicitação(ões)</div>
+      </div>
+    </div>
+    <div class="card-section" style="padding:0">${renderSolsList(mySols, false)}</div>`;
+}
+
+function userLog(content) {
+  const log = getLog().filter(l => l.target === _profile.id);
+  content.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">Meu Histórico de Alterações</div>
+        <div class="section-sub">Registro imutável e auditável de tudo que ocorre com seus dados</div>
+      </div>
+    </div>
+    <div class="card-section">
+      ${log.length ? log.slice().reverse().map(renderLogItem).join('') : `<div class="empty-state"><div class="es-icon">📋</div><div class="es-sub">Nenhuma alteração registrada</div></div>`}
+    </div>`;
+}
+
+// ============================================================
+// GESTOR
+// ============================================================
+function renderGestor(content) {
+  if (_currentPage === 'dashboard')    return gestorDashboard(content);
+  if (_currentPage === 'pendentes')    return gestorPendentes(content);
+  if (_currentPage === 'minha-equipe') return gestorEquipe(content);
+  if (_currentPage === 'cal-equipe')   return calendarioEquipe(content);
+  if (_currentPage === 'minhas-sols')  return userMinhasSols(content);
+}
+
+function gestorDashboard(content) {
+  const team = getCollabs().filter(c => c.gestorId === _profile.id);
+  const teamIds = team.map(t => t.id);
+  const teamSols = getSols().filter(s => teamIds.includes(s.userId));
+  const pendentes = teamSols.filter(s => s.status === 'pendente');
+
+  let cntG=0, cntY=0, cntO=0, cntR=0;
+  team.forEach(c => {
+    const ird = calcIRD(c.id);
+    if (ird.nivel === 'green') cntG++;
+    else if (ird.nivel === 'yellow') cntY++;
+    else if (ird.nivel === 'orange') cntO++;
+    else cntR++;
+  });
+
+  const today = new Date().toISOString().slice(0,10);
+  const ausentesHoje = teamSols.filter(s => s.status === 'aprovada' && s.inicio <= today && s.fim >= today);
+  const conflitos = detectarConflitos(teamSols.filter(s => s.status === 'aprovada'));
+
+  const periodosCriticos = [];
+  team.forEach(c => {
+    getPeriodosColab(c.id).filter(p => !p.emFormacao).forEach(p => {
+      const a = getAlertaPeriodo(p);
+      if (['vermelho','laranja'].includes(a.nivel)) periodosCriticos.push({ collab: c, periodo: p, alerta: a });
+    });
+  });
+
+  content.innerHTML = `
+    <div class="index-banner">
+      <div class="index-card ${pendentes.length > 0 ? 'ic-yellow' : ''}">
+        <div class="ic-label">⏳ Pendentes</div><div class="ic-val">${pendentes.length}</div><div class="ic-sub">Aguardando você</div>
+      </div>
+      <div class="index-card ic-red">
+        <div class="ic-label">🔴 IRD Crítico</div><div class="ic-val">${cntR}</div><div class="ic-sub">Intervenção urgente</div>
+      </div>
+      <div class="index-card ic-orange">
+        <div class="ic-label">🟠 Risco</div><div class="ic-val">${cntO}</div><div class="ic-sub">Risco de desgaste</div>
+      </div>
+      <div class="index-card">
+        <div class="ic-label">Ausentes Hoje</div><div class="ic-val">${ausentesHoje.length}</div><div class="ic-sub">${team.length} no time</div>
+      </div>
+    </div>
+
+    ${pendentes.length > 0 ? `
+      <div class="card-section">
+        <div class="section-header">
+          <div><div class="section-title">Solicitações pendentes (${pendentes.length})</div><div class="section-sub">Ação requerida</div></div>
+          <button class="btn btn-secondary btn-sm" onclick="navigateTo('pendentes')">Ver todas →</button>
+        </div>
+        <div class="req-list">${pendentes.slice(0,3).map(renderReqCard).join('')}</div>
+      </div>` : ''}
+
+    ${periodosCriticos.length > 0 ? `
+      <div class="card-section">
+        <div class="section-header">
+          <div><div class="section-title">🚨 Períodos em risco (${periodosCriticos.length})</div><div class="section-sub">Colaboradores que precisam ser incentivados a descansar</div></div>
+        </div>
+        ${periodosCriticos.map(({ collab, periodo, alerta }) => `
+          <div class="periodo-card alert-${alerta.nivel}" style="margin-bottom:8px">
+            <div class="periodo-head">
+              <div style="display:flex; align-items:center; gap:10px">
+                <div class="avatar" style="background:${avatarColor(collab.nome)}">${initials(collab.nome)}</div>
+                <div><div class="periodo-titulo">${collab.nome}</div><div class="periodo-meta">Período ${periodo.ano}º — ${getSaldoRemanescente(periodo)}d remanescentes</div></div>
+              </div>
+            </div>
+            <div class="periodo-alert ${alerta.nivel}">${alerta.nivel === 'vermelho' ? '🚨' : '⚠️'} ${alerta.label} — ${alerta.desc}</div>
+          </div>`).join('')}
+      </div>` : ''}
+
+    ${conflitos.length > 0 ? `
+      <div class="card-section">
+        <div class="section-header">
+          <div><div class="section-title">⚠️ Conflitos de calendário (${conflitos.length})</div><div class="section-sub">Ausências aprovadas que se sobrepõem</div></div>
+        </div>
+        ${conflitos.slice(0,5).map(c => `
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border)">
+            <div class="avatar" style="background:${avatarColor(c.a.nome)}">${initials(c.a.nome)}</div>
+            <div style="flex:1; font-size:13px"><strong>${c.a.nome}</strong> e <strong>${c.b.nome}</strong></div>
+            <div style="font-size:11.5px; color:var(--muted)">${fmtDate(c.overlap.inicio)} → ${fmtDate(c.overlap.fim)}</div>
+          </div>`).join('')}
+      </div>` : ''}
+
+    <div class="card-section">
+      <div class="section-header">
+        <div><div class="section-title">Equipe (${team.length})</div><div class="section-sub">Saldo total · IRD · Clique para detalhes</div></div>
+        <button class="btn btn-secondary btn-sm" onclick="navigateTo('minha-equipe')">Ver detalhes →</button>
+      </div>
+      <div class="team-grid">${team.map(renderTeamCard).join('')}</div>
+    </div>`;
+}
+
+function gestorPendentes(content) {
+  const team = getCollabs().filter(c => c.gestorId === _profile.id);
+  const teamIds = team.map(t => t.id);
+  const pendentes = getSols().filter(s => teamIds.includes(s.userId) && s.status === 'pendente').sort((a,b) => a.criadoEm - b.criadoEm);
+  content.innerHTML = `
+    <div class="section-header">
+      <div><div class="section-title">${pendentes.length} solicitação(ões) pendente(s)</div><div class="section-sub">Mais antigas primeiro</div></div>
+    </div>
+    ${pendentes.length === 0
+      ? `<div class="card-section"><div class="empty-state"><div class="es-icon">✅</div><div class="es-title">Tudo em dia!</div></div></div>`
+      : `<div class="req-list">${pendentes.map(renderReqCard).join('')}</div>`}`;
+}
+
+function gestorEquipe(content) {
+  const team = getCollabs().filter(c => c.gestorId === _profile.id);
+  content.innerHTML = `
+    <div class="card-section">
+      <div class="section-header">
+        <div><div class="section-title">Minha Equipe (${team.length})</div><div class="section-sub">Clique em um colaborador para ver detalhes</div></div>
+      </div>
+      <div class="team-grid">${team.map(renderTeamCard).join('')}</div>
+    </div>
+    <div class="card-section">
+      <h3>Histórico de ausências da equipe</h3>
+      ${renderSolsList(getSols().filter(s => team.map(t=>t.id).includes(s.userId)).sort((a,b) => b.inicio.localeCompare(a.inicio)), true)}
+    </div>`;
+}
+
+// ============================================================
+// RH / G&G / CEO / CFO
+// ============================================================
+function renderRH(content) {
+  if (_currentPage === 'dashboard')    return rhDashboard(content);
+  if (_currentPage === 'todas-sols')   return rhTodasSols(content);
+  if (_currentPage === 'todos-saldos') return rhTodosSaldos(content);
+  if (_currentPage === 'riscos')       return rhRiscos(content);
+  if (_currentPage === 'cal-empresa')  return calendarioEmpresa(content);
+  if (_currentPage === 'colabs-rh')    return rhColabs(content);
+  if (_currentPage === 'log')          return rhLog(content);
+  if (_currentPage === 'config')       return rhConfig(content);
+}
+
+function rhDashboard(content) {
+  const collabs = getCollabs();
+  const sols = getSols();
+  const pendentes = sols.filter(s => s.status === 'pendente');
+  const today = new Date().toISOString().slice(0,10);
+  const ausentesHoje = sols.filter(s => s.status === 'aprovada' && s.inicio <= today && s.fim >= today);
+
+  let cntG=0, cntY=0, cntO=0, cntR=0;
+  collabs.forEach(c => {
+    const ird = calcIRD(c.id);
+    if (ird.nivel === 'green') cntG++;
+    else if (ird.nivel === 'yellow') cntY++;
+    else if (ird.nivel === 'orange') cntO++;
+    else cntR++;
+  });
+
+  const irdMedio = collabs.length ? Math.round(collabs.reduce((acc,c) => acc + calcIRD(c.id).score, 0) / collabs.length) : 0;
+
+  content.innerHTML = `
+    <div class="index-banner">
+      <div class="index-card"><div class="ic-label">👥 Colaboradores</div><div class="ic-val">${collabs.length}</div><div class="ic-sub">Ativos</div></div>
+      <div class="index-card ${pendentes.length > 0 ? 'ic-yellow' : ''}"><div class="ic-label">⏳ Pendentes</div><div class="ic-val">${pendentes.length}</div><div class="ic-sub">Aguardando gestor</div></div>
+      <div class="index-card"><div class="ic-label">📅 Ausentes Hoje</div><div class="ic-val">${ausentesHoje.length}</div><div class="ic-sub">Em curso</div></div>
+      <div class="index-card ic-red"><div class="ic-label">🔴 IRD Crítico</div><div class="ic-val">${cntR}</div><div class="ic-sub">Intervenção</div></div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom:16px">
+      <div class="card-section" style="margin:0">
+        <h3>Distribuição do IRD</h3>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          ${[
+            { lbl:'🟢 Saudável (0-30)',  val:cntG, color:'var(--green)' },
+            { lbl:'🟡 Atenção (31-60)',  val:cntY, color:'var(--yellow)' },
+            { lbl:'🟠 Risco (61-80)',    val:cntO, color:'var(--orange)' },
+            { lbl:'🔴 Crítico (81-100)', val:cntR, color:'var(--red)' },
+          ].map(r => {
+            const pct = collabs.length ? Math.round(r.val/collabs.length*100) : 0;
+            return `<div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; font-weight:600">
+                <span>${r.lbl}</span><span>${r.val} · ${pct}%</span>
+              </div>
+              <div style="height:8px; background:var(--bg); border-radius:4px; overflow:hidden">
+                <div style="height:100%; width:${pct}%; background:${r.color}; transition:width .5s"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="margin-top:14px; padding:10px 12px; background:var(--bg); border-radius:7px; font-size:12px; color:var(--muted)">
+          <strong style="color:var(--text)">IRD médio da empresa:</strong> ${irdMedio} pontos
+        </div>
+      </div>
+
+      <div class="card-section" style="margin:0">
+        <h3>Ausentes hoje (${ausentesHoje.length})</h3>
+        ${ausentesHoje.length === 0
+          ? `<div class="empty-state" style="padding:30px 16px"><div class="es-icon">👋</div><div class="es-sub">Todos trabalhando hoje</div></div>`
+          : ausentesHoje.map(s => {
+            const c = collabs.find(x => x.id === s.userId);
+            const t = getTipos().find(x => x.id === s.tipo);
+            return `<div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border)">
+              <div class="avatar" style="background:${avatarColor(c.nome)}">${initials(c.nome)}</div>
+              <div style="flex:1; min-width:0">
+                <div style="font-weight:600; font-size:13px">${c.nome}</div>
+                <div style="font-size:11px; color:var(--muted)">Volta em ${fmtDate(s.fim)}</div>
+              </div>
+              <span class="chip chip-${t?.cor}">${t?.nome}</span>
+            </div>`;
+          }).join('')}
+      </div>
+    </div>
+
+    ${pendentes.length > 0 ? `
+      <div class="card-section">
+        <div class="section-header">
+          <div><div class="section-title">Solicitações pendentes</div></div>
+          <button class="btn btn-secondary btn-sm" onclick="navigateTo('todas-sols')">Ver todas →</button>
+        </div>
+        ${renderSolsList(pendentes.slice(0,5), true)}
+      </div>` : ''}`;
+}
+
+function rhRiscos(content) {
+  const collabs = getCollabs();
+  const ranking = collabs.map(c => ({ collab: c, ird: calcIRD(c.id) })).sort((a,b) => b.ird.score - a.ird.score);
+  content.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">Índice de Risco de Descanso</div>
+        <div class="section-sub">Ranking decrescente · 40% sem usufruto + 35% acúmulo + 25% adiamentos</div>
+      </div>
+    </div>
+    <div class="card-section" style="padding:0">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Colaborador</th><th>Gestor</th><th>IRD</th><th>Status</th><th>Meses s/ usufruto</th><th>Acumulado</th><th>Adiamentos</th><th></th></tr></thead>
+        <tbody>${ranking.map(({ collab, ird }) => {
+          const g = collabs.find(x => x.id === collab.gestorId);
+          return `<tr>
+            <td><div class="collab-cell">
+              <div class="avatar" style="background:${avatarColor(collab.nome)}">${initials(collab.nome)}</div>
+              <div><div class="nm">${collab.nome}</div><div class="cg">${collab.cargo}</div></div>
+            </div></td>
+            <td>${g ? g.nome : '—'}</td>
+            <td><strong style="font-family:'DM Mono',monospace; font-size:16px; color:var(--${ird.nivel === 'green' ? 'green' : ird.nivel === 'red' ? 'red' : ird.nivel === 'orange' ? 'orange' : 'yellow'})">${ird.score}</strong></td>
+            <td><span class="sla-dot ${ird.nivel}"></span>${ird.label}</td>
+            <td>${ird.mesesSemUsufruto}m</td>
+            <td>${ird.totalAcumulado}d</td>
+            <td>${ird.adiamentos}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="openDetalheColab('${collab.id}')">Detalhes</button></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+function rhTodasSols(content) {
+  const sols = getSols().sort((a,b) => b.criadoEm - a.criadoEm);
+  const filter = window._rhFilter || 'todas';
+  const filtered = filter === 'todas' ? sols : sols.filter(s => s.status === filter);
+  content.innerHTML = `
+    <div class="section-header">
+      <div><div class="section-title">${filtered.length} solicitação(ões)</div><div class="section-sub">Mais recentes primeiro</div></div>
+      <div style="display:flex; gap:6px">
+        ${['todas','pendente','aprovada','reprovada'].map(f => `
+          <button class="btn ${filter === f ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="rhFilter('${f}')">${f.charAt(0).toUpperCase() + f.slice(1)}</button>
+        `).join('')}
+      </div>
+    </div>
+    <div class="card-section" style="padding:0">${renderSolsList(filtered, true)}</div>`;
+}
+function rhFilter(f) { window._rhFilter = f; render(); }
+
+function rhTodosSaldos(content) {
+  const collabs = getCollabs();
+  content.innerHTML = `
+    <div class="section-header">
+      <div><div class="section-title">Saldos e Períodos Aquisitivos</div><div class="section-sub">Clique em "Detalhes" para ver os períodos e ajustes</div></div>
+    </div>
+    <div class="card-section" style="padding:0">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Colaborador</th><th>Início Contrato</th><th>Períodos Abertos</th><th>Saldo Total</th><th>IRD</th><th></th></tr></thead>
+        <tbody>${collabs.map(c => {
+          const periodos = getPeriodosColab(c.id).filter(p => !p.emFormacao && getSaldoRemanescente(p) > 0);
+          const total = getSaldoTotal(c.id);
+          const ird = calcIRD(c.id);
+          return `<tr>
+            <td><div class="collab-cell">
+              <div class="avatar" style="background:${avatarColor(c.nome)}">${initials(c.nome)}</div>
+              <div><div class="nm">${c.nome}</div><div class="cg">${c.cargo}</div></div>
+            </div></td>
+            <td>${fmtDate(c.inicioContrato)}</td>
+            <td>${periodos.length}</td>
+            <td><strong style="font-family:'DM Mono',monospace; font-size:15px">${total}</strong> dias</td>
+            <td><span class="sla-dot ${ird.nivel}"></span><strong>${ird.score}</strong></td>
+            <td><button class="btn btn-secondary btn-sm" onclick="openDetalheColab('${c.id}')">Detalhes</button></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+function rhColabs(content) {
+  const collabs = getCollabs();
+  content.innerHTML = `
+    <div class="section-header">
+      <div><div class="section-title">Colaboradores (${collabs.length})</div></div>
+    </div>
+    <div class="card-section" style="padding:0">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Nome</th><th>Cargo</th><th>E-mail</th><th>Início Contrato</th><th>Gestor</th><th>Função</th></tr></thead>
+        <tbody>${collabs.map(c => {
+          const g = collabs.find(x => x.id === c.gestorId);
+          return `<tr>
+            <td><div class="collab-cell"><div class="avatar" style="background:${avatarColor(c.nome)}">${initials(c.nome)}</div><div class="nm">${c.nome}</div></div></td>
+            <td>${c.cargo}</td>
+            <td style="color:var(--muted); font-size:12px">${c.email}</td>
+            <td>${fmtDate(c.inicioContrato)}</td>
+            <td>${g ? g.nome : '—'}</td>
+            <td>${c.isGestor ? '<span class="chip chip-blue">Gestor</span>' : '<span class="chip chip-gray">Colaborador</span>'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+function rhLog(content) {
+  const log = getLog().slice().reverse();
+  content.innerHTML = `
+    <div class="section-header">
+      <div><div class="section-title">Log de Auditoria (${log.length} registros)</div><div class="section-sub">Histórico imutável · não pode ser apagado</div></div>
+    </div>
+    <div class="card-section">
+      ${log.length ? log.map(renderLogItem).join('') : `<div class="empty-state"><div class="es-icon">📋</div><div class="es-sub">Nenhum registro</div></div>`}
+    </div>`;
+}
+
+function rhConfig(content) {
+  const tipos = getTipos();
+  content.innerHTML = `
+    <div class="section-header"><div><div class="section-title">Configurações</div></div></div>
+    <div class="card-section">
+      <div class="section-header" style="margin-bottom:8px">
+        <div><h3 style="margin:0">Tipos de Ausência</h3><div class="section-sub">${tipos.length} tipos configurados</div></div>
+        <button class="btn btn-primary btn-sm" onclick="openTiposModal()">⚙️ Gerenciar</button>
+      </div>
+      <div class="type-legend" style="margin-top:14px">
+        ${tipos.map(t => `<span class="type-leg-item chip-${t.cor}">${t.nome}${t.consomeSaldo ? ' · consome saldo' : ''}</span>`).join('')}
+      </div>
+    </div>
+    <div class="card-section">
+      <h3>Parâmetros do Sistema</h3>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px">
+        <div style="display:flex; justify-content:space-between; padding:10px 12px; background:var(--bg); border-radius:7px"><span>Saldo anual por contrato</span><strong>30 dias</strong></div>
+        <div style="display:flex; justify-content:space-between; padding:10px 12px; background:var(--bg); border-radius:7px"><span>Cálculo</span><strong>Dias corridos</strong></div>
+        <div style="display:flex; justify-content:space-between; padding:10px 12px; background:var(--bg); border-radius:7px"><span>Data base do período aquisitivo</span><strong>Início do contrato PJ</strong></div>
+        <div style="display:flex; justify-content:space-between; padding:10px 12px; background:var(--bg); border-radius:7px"><span>Régua de alertas</span><strong>6m / 9m / 12m sem usufruto</strong></div>
+        <div style="display:flex; justify-content:space-between; padding:10px 12px; background:var(--bg); border-radius:7px"><span>Composição do IRD</span><strong>40% s/ usufruto + 35% acúmulo + 25% adiamentos</strong></div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// DETALHE COLABORADOR (modal usado por gestor e RH)
+// ============================================================
+function openDetalheColab(userId) {
+  const c = getCollabs().find(x => x.id === userId);
+  const periodos = getPeriodosColab(userId);
+  const ird = calcIRD(userId);
+  const sols = getSols().filter(s => s.userId === userId).sort((a,b) => b.criadoEm - a.criadoEm).slice(0, 5);
+  const log = getLog().filter(l => l.target === userId).slice().reverse().slice(0, 10);
+  const canEdit = _profile.role === 'rh';
+
+  document.getElementById('det-title').textContent = c.nome;
+  document.getElementById('det-sub').textContent = `${c.cargo} · Contrato desde ${fmtDate(c.inicioContrato)}`;
+  document.getElementById('det-body').innerHTML = `
+    <div class="ird-card" style="margin:0">
+      <div class="ird-head">
+        <div>
+          <div class="ird-title">Índice de Risco de Descanso</div>
+          <div class="ird-explain">Tempo sem usufruto + acúmulo + adiamentos</div>
+        </div>
+        <div style="text-align:right">
+          <div class="ird-score ${ird.nivel}">${ird.score}</div>
+          <div class="ird-label ${ird.nivel}">${ird.label}</div>
+        </div>
+      </div>
+      <div class="ird-bar"><div class="ird-bar-fill" style="width:${ird.score}%; background:var(--${ird.nivel === 'green' ? 'green' : ird.nivel === 'red' ? 'red' : ird.nivel === 'orange' ? 'orange' : 'yellow'})"></div></div>
+      <div class="ird-breakdown">
+        <div class="ird-breakdown-row"><span>Meses sem usufruto (40%)</span><span class="v">${ird.mesesSemUsufruto}m · ${ird.c1}pts</span></div>
+        <div class="ird-breakdown-row"><span>Dias acumulados (35%)</span><span class="v">${ird.totalAcumulado}d · ${ird.c2}pts</span></div>
+        <div class="ird-breakdown-row"><span>Adiamentos 24m (25%)</span><span class="v">${ird.adiamentos} · ${ird.c3}pts</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px">
+        <div style="font-weight:700; font-size:13px">Períodos aquisitivos (${periodos.length})</div>
+        ${canEdit ? `<button class="btn btn-warning btn-sm" onclick="openAjusteModal('${userId}')">⚙️ Ajuste manual</button>` : ''}
+      </div>
+      <div class="periodo-list">${periodos.slice().reverse().map(renderPeriodoCard).join('')}</div>
+    </div>
+
+    <div>
+      <div style="font-weight:700; font-size:13px; margin-bottom:8px">Últimas solicitações</div>
+      ${sols.length ? renderSolsList(sols, false) : '<div style="font-size:12px; color:var(--muted)">Nenhuma</div>'}
+    </div>
+
+    ${canViewLog(userId) ? `
+      <div>
+        <div style="font-weight:700; font-size:13px; margin-bottom:8px">Histórico recente</div>
+        ${log.length ? log.map(renderLogItem).join('') : '<div style="font-size:12px; color:var(--muted)">Nenhum registro</div>'}
+      </div>` : ''}`;
+  openModal('modal-detalhe');
+}
+
+// ============================================================
+// MODAL: NOVA SOLICITAÇÃO
+// ============================================================
+function openSolicitacaoModal() {
+  const tipos = getTipos();
+  document.getElementById('sol-tipo').innerHTML = '<option value="">Selecione...</option>' +
+    tipos.map(t => `<option value="${t.id}">${t.nome}${t.consomeSaldo ? ' (consome saldo)' : ''}</option>`).join('');
+  document.getElementById('sol-inicio').value = '';
+  document.getElementById('sol-fim').value = '';
+  document.getElementById('sol-obs').value = '';
+  document.getElementById('sol-tipo-hint').textContent = '';
+  document.getElementById('sol-preview').style.display = 'none';
+  const me = getCollabs().find(c => c.id === _profile.id);
+  document.getElementById('solicitacao-sub').textContent = me ? me.nome : '';
+  openModal('modal-solicitacao');
+}
+
+function onTipoChange() {
+  const tipoId = document.getElementById('sol-tipo').value;
+  const t = getTipos().find(x => x.id === tipoId);
+  const hint = document.getElementById('sol-tipo-hint');
+  if (!t) { hint.textContent = ''; return; }
+  if (t.consomeSaldo) {
+    const saldo = getSaldoUsufruivel(_profile.id);
+    const pAtivo = getPeriodoAtivo(_profile.id);
+    hint.innerHTML = `<span class="info">💰 Consome saldo · Disponível agora: ${saldo} dias${pAtivo ? ` (Período ${pAtivo.ano}º)` : ''}</span>`;
+  } else {
+    hint.innerHTML = `<span class="info">✓ Não consome seu saldo</span>`;
+  }
+  updateSaldoPreview();
+}
+
+function updateSaldoPreview() {
+  const tipoId = document.getElementById('sol-tipo').value;
+  const inicio = document.getElementById('sol-inicio').value;
+  const fim = document.getElementById('sol-fim').value;
+  const preview = document.getElementById('sol-preview');
+  const text = document.getElementById('sol-preview-text');
+  if (!tipoId || !inicio || !fim) { preview.style.display = 'none'; return; }
+  if (fim < inicio) {
+    preview.style.display = 'block';
+    text.innerHTML = '<span style="color:var(--red)">⚠️ Data final anterior à inicial</span>';
+    return;
+  }
+  const t = getTipos().find(x => x.id === tipoId);
+  const dias = diasEntre(inicio, fim);
+  const saldo = getSaldoUsufruivel(_profile.id);
+  preview.style.display = 'block';
+  let html = `<strong>${dias} dia(s)</strong> de ${fmtDate(inicio)} até ${fmtDate(fim)}`;
+  if (t.consomeSaldo) {
+    const pAtivo = getPeriodoAtivo(_profile.id);
+    const novo = saldo - dias;
+    if (novo < 0) {
+      html += `<br><span style="color:var(--red); font-weight:600">⚠️ Saldo insuficiente! Disponível agora: ${saldo} dias${pAtivo ? ` (Período ${pAtivo.ano}º)` : ''}. Conclua o período atual antes de usar o próximo.</span>`;
+    } else {
+      html += `<br>Saldo após aprovação: <strong>${novo} dias</strong> do Período ${pAtivo?.ano || '—'}º`;
+    }
+  }
+  text.innerHTML = html;
+}
+
+function saveSolicitacao() {
+  const tipo = document.getElementById('sol-tipo').value;
+  const inicio = document.getElementById('sol-inicio').value;
+  const fim = document.getElementById('sol-fim').value;
+  const obs = document.getElementById('sol-obs').value.trim();
+  if (!tipo) { showToast('⚠️ Selecione o tipo'); return; }
+  if (!inicio || !fim) { showToast('⚠️ Informe as datas'); return; }
+  if (fim < inicio) { showToast('⚠️ Data final inválida'); return; }
+  const t = getTipos().find(x => x.id === tipo);
+  const dias = diasEntre(inicio, fim);
+  if (t.consomeSaldo && dias > getSaldoUsufruivel(_profile.id)) { showToast('⚠️ Saldo insuficiente no período atual'); return; }
+  const sols = getSols();
+  sols.push({ id: uid(), userId: _profile.id, tipo, inicio, fim, dias, obs, status: 'pendente', criadoEm: Date.now() });
+  _set(KEY_S, sols);
+  closeModal('modal-solicitacao');
+  showToast('✅ Solicitação enviada ao gestor!');
+  render(); updateBadges();
+}
+
+// ============================================================
+// APROVAÇÃO / REPROVAÇÃO / CANCELAMENTO (com log)
+// ============================================================
+function aprovarSol(id) {
+  const sols = getSols();
+  const s = sols.find(x => x.id === id);
+  if (!s) return;
+  s.dias = diasEntre(s.inicio, s.fim);
+  const t = getTipos().find(x => x.id === s.tipo);
+
+  // Débito FIFO entre períodos
+  if (t?.consomeSaldo) {
+    const periodos = getPeriodos();
+    const meusAbertos = periodos.filter(p => p.userId === s.userId && !p.encerrado && !p.emFormacao && getSaldoRemanescente(p) > 0)
+      .sort((a,b) => a.inicio.localeCompare(b.inicio));
+    let restante = s.dias;
+    const debitos = [];
+    for (const p of meusAbertos) {
+      if (restante <= 0) break;
+      const disp = getSaldoRemanescente(p);
+      const deb = Math.min(disp, restante);
+      p.diasUsados += deb;
+      debitos.push({ periodoId: p.id, ano: p.ano, qtd: deb });
+      restante -= deb;
+    }
+    if (restante > 0) { showToast('⚠️ Saldo insuficiente em todos os períodos'); return; }
+    _set(KEY_P, periodos);
+    s.debitos = debitos;
+  }
+
+  s.status = 'aprovada';
+  s.aprovadoEm = Date.now();
+  s.aprovadoPor = _profile.id;
+  _set(KEY_S, sols);
+
+  logAction({
+    acao: 'aprovar', target: s.userId,
+    targetLabel: `Solicitação ${fmtDate(s.inicio)} → ${fmtDate(s.fim)}`,
+    valorAnterior: 'Pendente',
+    valorNovo: `Aprovada · ${s.dias}d`,
+    motivo: t?.consomeSaldo ? `Debitado de: ${s.debitos.map(d => `${d.ano}º (${d.qtd}d)`).join(', ')}` : 'Sem débito de saldo'
+  });
+  showToast('✅ Aprovado!');
+  render(); updateBadges();
+}
+
+function reprovarSol(id) {
+  const motivo = prompt('Motivo da reprovação:');
+  if (motivo === null) return;
+  const sols = getSols();
+  const s = sols.find(x => x.id === id);
+  if (!s) return;
+  s.status = 'reprovada';
+  s.motivoReprov = motivo.trim() || 'Não informado';
+  s.reprovadoEm = Date.now();
+  s.reprovadoPor = _profile.id;
+  _set(KEY_S, sols);
+  logAction({ acao:'reprovar', target:s.userId, targetLabel:`Solicitação ${fmtDate(s.inicio)} → ${fmtDate(s.fim)}`, valorAnterior:'Pendente', valorNovo:'Reprovada', motivo: s.motivoReprov });
+  showToast('Reprovada.');
+  render(); updateBadges();
+}
+
+function cancelarSolicitacao(id) {
+  if (!confirm('Cancelar esta solicitação?')) return;
+  const sols = getSols();
+  const s = sols.find(x => x.id === id);
+  if (!s) return;
+  s.status = 'cancelada';
+  _set(KEY_S, sols);
+  logAction({ acao:'cancelar', target:s.userId, targetLabel:`Solicitação ${fmtDate(s.inicio)} → ${fmtDate(s.fim)}`, valorAnterior:'Pendente', valorNovo:'Cancelada' });
+  showToast('Cancelada.');
+  render(); updateBadges();
+}
+
+// ============================================================
+// AJUSTE MANUAL (G&G / CEO / CFO)
+// ============================================================
+let _ajusteUid = null;
+function openAjusteModal(userId) {
+  _ajusteUid = userId;
+  const c = getCollabs().find(x => x.id === userId);
+  document.getElementById('ajuste-sub').textContent = c?.nome || '';
+  document.getElementById('ajuste-motivo').value = '';
+  document.getElementById('ajuste-valor').value = '';
+  document.getElementById('ajuste-tipo').value = 'ajuste-saldo';
+  onAjusteTipoChange();
+  openModal('modal-ajuste');
+}
+
+function onAjusteTipoChange() {
+  const tipo = document.getElementById('ajuste-tipo').value;
+  const group = document.getElementById('ajuste-valor-group');
+  const hint = document.getElementById('ajuste-valor-hint');
+  const label = document.getElementById('ajuste-valor-label');
+  if (tipo === 'ajuste-saldo') {
+    group.style.display = 'flex';
+    label.textContent = 'Novo saldo agregado (dias)';
+    hint.textContent = 'Soma dos saldos remanescentes de todos os períodos abertos.';
+  } else if (tipo === 'conceder-antecipado') {
+    group.style.display = 'flex';
+    label.textContent = 'Dias a conceder';
+    hint.textContent = 'Cria um período aquisitivo extra, antecipando direito futuro.';
+  } else {
+    group.style.display = 'none';
+  }
+}
+
+function saveAjuste() {
+  const tipo = document.getElementById('ajuste-tipo').value;
+  const motivo = document.getElementById('ajuste-motivo').value.trim();
+  if (!motivo) { showToast('⚠️ Motivo é obrigatório'); return; }
+  const c = getCollabs().find(x => x.id === _ajusteUid);
+
+  if (tipo === 'ajuste-saldo') {
+    const novo = parseInt(document.getElementById('ajuste-valor').value);
+    if (isNaN(novo) || novo < 0) { showToast('⚠️ Valor inválido'); return; }
+    const anterior = getSaldoTotal(_ajusteUid);
+    const diff = novo - anterior;
+    const periodos = getPeriodos();
+    const meusAbertos = periodos.filter(p => p.userId === _ajusteUid && !p.encerrado && !p.emFormacao)
+      .sort((a,b) => a.inicio.localeCompare(b.inicio));
+    if (meusAbertos.length === 0) { showToast('⚠️ Nenhum período disponível para ajuste'); return; }
+    if (diff > 0) {
+      // Acréscimo: aumenta o concedido do período mais recente
+      const p = meusAbertos[meusAbertos.length - 1];
+      p.diasConcedidos += diff;
+    } else if (diff < 0) {
+      // Redução: aumenta o usado nos mais antigos (FIFO)
+      let restante = -diff;
+      for (const p of meusAbertos) {
+        if (restante <= 0) break;
+        const disp = getSaldoRemanescente(p);
+        const red = Math.min(disp, restante);
+        p.diasUsados += red;
+        restante -= red;
+      }
+    }
+    _set(KEY_P, periodos);
+    logAction({ acao:'ajuste', target:_ajusteUid, targetLabel:`Saldo agregado de ${c.nome}`, valorAnterior:`${anterior}d`, valorNovo:`${novo}d`, motivo });
+    showToast('✅ Saldo ajustado e registrado.');
+
+  } else if (tipo === 'conceder-antecipado') {
+    const dias = parseInt(document.getElementById('ajuste-valor').value);
+    if (isNaN(dias) || dias < 1) { showToast('⚠️ Valor inválido'); return; }
+    const periodos = getPeriodos();
+    const meus = periodos.filter(p => p.userId === _ajusteUid);
+    const novoAno = meus.length > 0 ? Math.max(...meus.map(p => p.ano)) + 1 : 1;
+    const hoje = new Date().toISOString().slice(0,10);
+    periodos.push({
+      id: `p_${_ajusteUid}_extra_${Date.now()}`,
+      userId: _ajusteUid,
+      ano: novoAno,
+      inicio: hoje,
+      fim: hoje,
+      diasConcedidos: dias,
+      diasUsados: 0,
+      emFormacao: false,
+      encerrado: false,
+      antecipado: true,
+      criadoEm: Date.now()
+    });
+    _set(KEY_P, periodos);
+    logAction({ acao:'conceder-antecipado', target:_ajusteUid, targetLabel:`Concessão antecipada — ${c.nome}`, valorAnterior:null, valorNovo:`Novo período de ${dias}d`, motivo });
+    showToast('✅ Concessão registrada.');
+
+  } else if (tipo === 'encerrar-periodo') {
+    const periodos = getPeriodos();
+    const meus = periodos.filter(p => p.userId === _ajusteUid && !p.encerrado && !p.emFormacao)
+      .sort((a,b) => a.inicio.localeCompare(b.inicio));
+    if (meus.length === 0) { showToast('⚠️ Nenhum período encerrável'); return; }
+    const alvo = meus[0];
+    const saldoQuit = getSaldoRemanescente(alvo);
+    alvo.encerrado = true;
+    _set(KEY_P, periodos);
+    logAction({ acao:'encerrar', target:_ajusteUid, targetLabel:`Período ${alvo.ano}º — ${c.nome}`, valorAnterior:`${saldoQuit}d remanescentes`, valorNovo:'Encerrado', motivo });
+    showToast('✅ Período encerrado.');
+  }
+
+  closeModal('modal-ajuste');
+  closeModal('modal-detalhe');
+  render();
+}
+
+// ============================================================
+// TIPOS DE AUSÊNCIA
+// ============================================================
+function openTiposModal() { renderTiposList(); openModal('modal-tipos'); }
+function renderTiposList() {
+  const tipos = getTipos();
+  document.getElementById('tipos-list').innerHTML = tipos.map(t => `
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 11px; background:var(--bg); border-radius:7px; margin-bottom:6px">
+      <span class="chip chip-${t.cor}" style="min-width:80px; justify-content:center">${t.nome}</span>
+      <div style="flex:1; font-size:12px; color:var(--muted)">${t.consomeSaldo ? '💰 Consome saldo' : '✓ Não consome'}</div>
+      ${!t.fixo ? `<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="removerTipo('${t.id}')">✕</button>` : '<span class="chip chip-gray">Fixo</span>'}
+    </div>`).join('');
+}
+function addTipo() {
+  const nome = document.getElementById('novo-tipo-nome').value.trim();
+  const consome = document.getElementById('novo-tipo-consome').checked;
+  if (!nome) { showToast('⚠️ Nome obrigatório'); return; }
+  const tipos = getTipos();
+  tipos.push({ id: uid(), nome, consomeSaldo: consome, cor: 'outros', fixo: false });
+  _set(KEY_T, tipos);
+  document.getElementById('novo-tipo-nome').value = '';
+  document.getElementById('novo-tipo-consome').checked = false;
+  renderTiposList();
+  showToast('✅ Adicionado.');
+}
+function removerTipo(id) {
+  if (!confirm('Remover este tipo?')) return;
+  _set(KEY_T, getTipos().filter(t => t.id !== id));
+  renderTiposList();
+  showToast('Removido.');
+}
+
+// ============================================================
+// EXPORT (4 abas: colaboradores, períodos, solicitações, log)
+// ============================================================
+function exportData() {
+  const collabs = getCollabs();
+  const sols = getSols();
+  const tipos = getTipos();
+  const periodos = getPeriodos();
+  const log = getLog();
+
+  const r1 = [['Colaborador','Cargo','E-mail','Início Contrato','Gestor','Saldo Total','IRD','Status IRD']];
+  collabs.forEach(c => {
+    const g = collabs.find(x => x.id === c.gestorId);
+    const total = getSaldoTotal(c.id);
+    const ird = calcIRD(c.id);
+    r1.push([c.nome, c.cargo, c.email, fmtDate(c.inicioContrato), g?.nome || '—', total, ird.score, ird.label]);
+  });
+
+  const r2 = [['Colaborador','Período','Início','Fim','Concedidos','Usados','Remanescentes','Status']];
+  periodos.forEach(p => {
+    const c = collabs.find(x => x.id === p.userId);
+    r2.push([c?.nome || '', `${p.ano}º`, fmtDate(p.inicio), fmtDate(p.fim), p.diasConcedidos, p.diasUsados, getSaldoRemanescente(p), p.emFormacao ? 'Em formação' : p.encerrado ? 'Encerrado' : 'Aberto']);
+  });
+
+  const r3 = [['Colaborador','Tipo','Início','Fim','Dias','Status','Observações','Motivo Reprovação']];
+  sols.slice().sort((a,b) => b.criadoEm - a.criadoEm).forEach(s => {
+    const c = collabs.find(x => x.id === s.userId);
+    const t = tipos.find(x => x.id === s.tipo);
+    r3.push([c?.nome || '', t?.nome || s.tipo, fmtDate(s.inicio), fmtDate(s.fim), s.dias, s.status.charAt(0).toUpperCase() + s.status.slice(1), s.obs || '', s.motivoReprov || '']);
+  });
+
+  const r4 = [['Data/Hora','Ação','Alvo','Valor Anterior','Valor Novo','Motivo','Por','Função']];
+  log.slice().reverse().forEach(l => {
+    r4.push([fmtDateTime(l.timestamp), l.acao, l.targetLabel, l.valorAnterior || '', l.valorNovo || '', l.motivo || '', l.actorNome, l.actorRole || '']);
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r1), 'Colaboradores');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r2), 'Períodos Aquisitivos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r3), 'Solicitações');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r4), 'Log de Auditoria');
+  XLSX.writeFile(wb, 'moldaway_relatorio.xlsx');
+  showToast('📥 Exportado!');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+seed();
+const ps = document.getElementById('profile-select');
+const psm = document.getElementById('profile-select-mobile');
+psm.innerHTML = ps.innerHTML;
+psm.value = ps.value;
+rebuildNav();
+navigateTo('dashboard');
+console.log('MoldAway v2 ok — collabs:', getCollabs().length, 'periodos:', getPeriodos().length, 'sols:', getSols().length);
+</script>
+</body>
+</html>
