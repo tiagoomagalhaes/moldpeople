@@ -7,7 +7,6 @@ const SUPABASE_URL = "https://pmatrdykalqrcyaaifeo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtYXRyZHlrYWxxcmN5YWFpZmVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4ODA3OTAsImV4cCI6MjA5NTQ1Njc5MH0.WKI686kyrJc9eEJlNxzNlaL6znkv-T_66kTyrSjq8Vo";
 
 // Modo demo desativado — Supabase configurado
-const IS_DEMO = false;
 
 // ============================================================
 // SUPABASE CLIENT (sem SDK externo)
@@ -156,7 +155,7 @@ function LoginScreen({ onLogin }) {
     setError("");
     setLoading(true);
     try {
-      const data = await supabase.signIn(email, password);
+      await supabase.signIn(email, password);
       const authUser = await supabase.getUser();
       const profile = await supabase.getUserProfile(authUser.id);
       if (!profile) throw new Error("Perfil não encontrado. Contate o administrador.");
